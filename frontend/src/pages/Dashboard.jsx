@@ -4,6 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import ProjectCard from '../components/project/ProjectCard';
 import TaskList from '../components/task/TaskList';
 import NotificationPanel from '../components/common/NotificationPanel';
+import CreateTaskModal from '../components/task/CreateTaskModal';
 import api from '../services/api';
 
 export default function Dashboard() {
@@ -11,6 +12,7 @@ export default function Dashboard() {
   const [recentTasks, setRecentTasks] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -37,6 +39,11 @@ export default function Dashboard() {
 
     fetchDashboardData();
   }, []);
+
+  const handleTaskCreated = (newTask) => {
+    setRecentTasks(prevTasks => [newTask, ...prevTasks].slice(0, 5));
+    setIsTaskModalOpen(false);
+  };
 
   return (
     <DashboardLayout>
@@ -75,7 +82,7 @@ export default function Dashboard() {
                 </div>
               )}
               
-              {projects.length > 0 && (
+              {projects.length > 4 && (
                 <div className="mt-4 text-center">
                   <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-500">
                     View all projects
@@ -105,12 +112,12 @@ export default function Dashboard() {
             <section className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">
-                <Link 
-                  to="/tasks/new" 
+                <button 
+                  onClick={() => setIsTaskModalOpen(true)}
                   className="block w-full text-left px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Create new task
-                </Link>
+                </button>
                 <Link 
                   to="/chats" 
                   className="block w-full text-left px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
@@ -128,6 +135,14 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Task Creation Modal */}
+      <CreateTaskModal 
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        onTaskCreated={handleTaskCreated}
+        projects={projects}
+      />
     </DashboardLayout>
   );
 }

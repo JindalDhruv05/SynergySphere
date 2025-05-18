@@ -1,47 +1,54 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import TaskList from '../components/task/TaskList';
-import CreateTaskModal from '../components/task/CreateTaskModal';
 import api from '../services/api';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
     projectId: '',
     searchQuery: ''
   });
+  
+  const location = useLocation();
 
+  // Fetch data when component mounts or when returning from task creation
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [location.key]); // Re-fetch when location changes (returning from create task page)
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      // Fetch tasks
-      const tasksRes = await api.get('/tasks');
-      setTasks(tasksRes.data);
-      
-      // Fetch projects for filter
+      // Fetch projects first to ensure we have project data
       const projectsRes = await api.get('/projects');
       setProjects(projectsRes.data);
+      
+      // Fetch tasks
+      const tasksRes = await api.get('/tasks');
+      
+      // Enhance tasks with project data if needed
+      const enhancedTasks = tasksRes.data.map(task => {
+        // If projectId is just an ID string, find the project object
+        if (task.projectId && typeof task.projectId === 'string') {
+          const project = projectsRes.data.find(p => p._id === task.projectId);
+          return { ...task, projectId: project || { _id: task.projectId, name: 'Unknown Project' } };
+        }
+        return task;
+      });
+      
+      setTasks(enhancedTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTaskCreated = (newTask) => {
-    setTasks([...tasks, newTask]);
-    setIsModalOpen(false);
   };
 
   const handleFilterChange = (key, value) => {
@@ -54,7 +61,12 @@ export default function Tasks() {
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = !filters.status || task.status === filters.status;
     const matchesPriority = !filters.priority || task.priority === filters.priority;
-    const matchesProject = !filters.projectId || task.projectId._id === filters.projectId;
+    
+    // Handle both populated and unpopulated projectId
+    const matchesProject = !filters.projectId || 
+      (task.projectId && 
+        (task.projectId._id === filters.projectId || task.projectId === filters.projectId));
+    
     const matchesSearch = !filters.searchQuery || 
       task.title.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
       (task.description && task.description.toLowerCase().includes(filters.searchQuery.toLowerCase()));
@@ -69,12 +81,12 @@ export default function Tasks() {
           <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your tasks</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        <Link
+          to="/tasks/new"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-black bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
           Create Task
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-6">
@@ -146,26 +158,19 @@ export default function Tasks() {
         <div className="bg-white shadow rounded-lg p-6">
           <div className="text-center py-8">
             <p className="text-gray-500 mb-4">No tasks found matching your criteria</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
+            <Link
+              to="/tasks/new"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               Create a new task
-            </button>
+            </Link>
           </div>
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg">
-          <TaskList tasks={filteredTasks} />
+          <TaskList tasks={filteredTasks} projects={projects} />
         </div>
       )}
-
-      <CreateTaskModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        onTaskCreated={handleTaskCreated}
-        projects={projects}
-      />
     </DashboardLayout>
   );
 }

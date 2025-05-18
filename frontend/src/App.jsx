@@ -10,7 +10,8 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import CreateProject from './pages/CreateProject';
 import ProjectDetail from './pages/ProjectDetail';
-import Tasks from './pages/Tasks';  
+import Tasks from './pages/Tasks';
+import CreateTask from './pages/CreateTask';  
 import TaskDetail from './pages/TaskDetail';
 import Chats from './pages/Chats';
 import ChatDetail from './pages/ChatDetail';
@@ -69,6 +70,11 @@ function App() {
           <Route path="/tasks" element={
             <ProtectedRoute>
               <Tasks />
+            </ProtectedRoute>
+          } />
+            <Route path="/tasks/new" element={
+            <ProtectedRoute>
+              <CreateTask />
             </ProtectedRoute>
           } />
           <Route path="/tasks/:id" element={
