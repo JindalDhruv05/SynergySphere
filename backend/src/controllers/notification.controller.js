@@ -86,7 +86,7 @@ export const markAllNotificationsAsRead = async (req, res) => {
   }
 };
 
-// Delete notification
+// Delete notification (continued)
 export const deleteNotification = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
@@ -99,3 +99,61 @@ export const deleteNotification = async (req, res) => {
     if (notification.userId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this notification' });
     }
+    
+    await Notification.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({ message: 'Notification deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting notification', error: error.message });
+  }
+};
+
+// Create notification (utility function for internal use)
+export const createNotification = async (userId, type, content, relatedItemId) => {
+  try {
+    const notification = new Notification({
+      userId,
+      type,
+      content,
+      relatedItemId,
+      read: false
+    });
+    
+    await notification.save();
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
+
+// Get unread notification count
+export const getUnreadNotificationCount = async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({ 
+      userId: req.user.id, 
+      read: false 
+    });
+    
+    res.status(200).json({ count });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching notification count', error: error.message });
+  }
+};
+
+// Delete all read notifications
+export const deleteReadNotifications = async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({ 
+      userId: req.user.id, 
+      read: true 
+    });
+    
+    res.status(200).json({ 
+      message: 'Read notifications deleted successfully',
+      count: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting read notifications', error: error.message });
+  }
+};
