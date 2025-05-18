@@ -1,5 +1,5 @@
 import Project from '../models/project.model.js';
-import ProjectMember from '../models/ProjectMember.model.js';
+import ProjectMember from '../models/projectMember.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 
 // Get all projects for current user

@@ -1,6 +1,6 @@
-import Task from '../models/Task.js';
-import TaskMember from '../models/TaskMember.js';
-import Comment from '../models/Comment.js';
+import Task from '../models/task.model.js';
+import TaskMember from '../models/taskMember.model.js';
+import Comment from '../models/comment.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 
 // Get all tasks for current user
