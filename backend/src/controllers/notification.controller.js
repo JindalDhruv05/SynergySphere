@@ -19,11 +19,8 @@ export const getUserNotifications = async (req, res) => {
     
     const total = await Notification.countDocuments(query);
     
-    res.status(200).json({
-      notifications,
-      total,
-      hasMore: total > Number(skip) + Number(limit)
-    });
+    // Return just the notifications array instead of an object
+    res.status(200).json(notifications);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching notifications', error: error.message });
   }
@@ -86,7 +83,7 @@ export const markAllNotificationsAsRead = async (req, res) => {
   }
 };
 
-// Delete notification (continued)
+// Delete notification
 export const deleteNotification = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
