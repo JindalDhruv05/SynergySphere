@@ -100,6 +100,7 @@ export default function Projects() {
         </div>
       )}
 
+      {/* The modal component should always be rendered, but conditionally displayed */}
       <CreateProjectModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
