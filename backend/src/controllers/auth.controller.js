@@ -1,6 +1,6 @@
 import User from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
-
+import config from 'config';
 // Login
 export const login = async (req, res) => {
   try {

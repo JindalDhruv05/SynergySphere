@@ -29,6 +29,6 @@ export default {
     }
   },
   frontend: {
-    url: process.env.FRONTEND_URL || 'http://localhost:3000'
+    url: process.env.FRONTEND_URL || 'http://localhost:5173'
   }
 };
