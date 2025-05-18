@@ -92,6 +92,10 @@ SynergySphere is a comprehensive platform designed to enhance team collaboration
 * `frontend/`: Contains the client-side application built with React.
 * `.env`: Environment variables.
 
+## Video of Application Workflow Demonstration
+
+https://drive.google.com/file/d/1Jpj1o6jvj8zjxu2RKsjcjHhjpqRe2G2B/view?usp=sharing
+
 ## Contributing
 
 * Fork the repository and create a new branch for your feature/bug fix.
