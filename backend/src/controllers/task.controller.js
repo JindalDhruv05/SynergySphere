@@ -1,5 +1,6 @@
 import Task from '../models/task.model.js';
 import TaskMember from '../models/taskMember.model.js';
+import User from '../models/user.model.js';
 import Comment from '../models/comment.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 
