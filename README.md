@@ -96,6 +96,10 @@ SynergySphere is a comprehensive platform designed to enhance team collaboration
 
 https://drive.google.com/file/d/1Jpj1o6jvj8zjxu2RKsjcjHhjpqRe2G2B/view?usp=sharing
 
+## Model
+
+https://drive.google.com/file/d/12GsguShJRnECkie86X3QF2R__VzzXeRu/view?usp=sharing
+
 ## Contributing
 
 * Fork the repository and create a new branch for your feature/bug fix.
