@@ -1,27 +1,17 @@
 import mongoose from 'mongoose';
 
-const NotificationSchema = new mongoose.Schema({
+const ProjectMemberSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { 
+  role: { 
     type: String, 
-    enum: [
-      'task_assigned', 
-      'task_updated', 
-      'comment_added', 
-      'deadline_approaching',
-      'project_invitation',
-      'document_shared'
-    ], 
-    required: true 
+    enum: ['admin', 'member', 'viewer'], 
+    default: 'member' 
   },
-  content: { type: String, required: true },
-  relatedItemId: { type: mongoose.Schema.Types.ObjectId }, // Could be taskId, projectId, etc.
-  read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  joinedAt: { type: Date, default: Date.now }
 });
 
-// Index for faster queries of unread notifications
-NotificationSchema.index({ userId: 1, read: 1 });
+// Compound index to ensure a user is only added once per project
+ProjectMemberSchema.index({ projectId: 1, userId: 1 }, { unique: true });
 
-export default mongoose.model("Notification", NotificationSchema);
-// This model is used to manage notifications for users in the system.
+export default mongoose.model("ProjectMember", ProjectMemberSchema);

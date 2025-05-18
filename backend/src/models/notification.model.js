@@ -18,7 +18,7 @@ const NotificationSchema = new mongoose.Schema({
   relatedItemId: { type: mongoose.Schema.Types.ObjectId }, // Could be taskId, projectId, etc.
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
-});
+}); 
 
 // Index for faster queries of unread notifications
 NotificationSchema.index({ userId: 1, read: 1 });
