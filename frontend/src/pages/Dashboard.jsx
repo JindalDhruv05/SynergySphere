@@ -75,7 +75,7 @@ export default function Dashboard() {
                 </div>
               )}
               
-              {projects.length > 4 && (
+              {projects.length > 0 && (
                 <div className="mt-4 text-center">
                   <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-500">
                     View all projects

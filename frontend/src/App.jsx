@@ -1,15 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-
-// Pages
+import './App.css';
+// Import pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
+import CreateProject from './pages/CreateProject';
 import ProjectDetail from './pages/ProjectDetail';
-import Tasks from './pages/Tasks';
+import Tasks from './pages/Tasks';  
 import TaskDetail from './pages/TaskDetail';
 import Chats from './pages/Chats';
 import ChatDetail from './pages/ChatDetail';
@@ -59,6 +60,7 @@ function App() {
               <Projects />
             </ProtectedRoute>
           } />
+          <Route path="/projects/new" element={<CreateProject />} />
           <Route path="/projects/:id" element={
             <ProtectedRoute>
               <ProjectDetail />
