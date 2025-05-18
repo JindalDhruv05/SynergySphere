@@ -1,0 +1,355 @@
+import Task from '../models/Task.js';
+import TaskMember from '../models/TaskMember.js';
+import Comment from '../models/Comment.js';
+import { createGoogleDriveFolder } from '../services/googleDrive.js';
+
+// Get all tasks for current user
+export const getTasks = async (req, res) => {
+  try {
+    const { projectId, status } = req.query;
+    
+    // Build query
+    const query = {};
+    
+    // Filter by project if provided
+    if (projectId) {
+      query.projectId = projectId;
+    }
+    
+    // Filter by status if provided
+    if (status) {
+      query.status = status;
+    }
+    
+    // Find all tasks where user is a member
+    const taskMembers = await TaskMember.find({ userId: req.user.id });
+    const taskIds = taskMembers.map(tm => tm.taskId);
+    
+    // Also include tasks created by the user
+    query.$or = [
+      { _id: { $in: taskIds } },
+      { createdBy: req.user.id }
+    ];
+    
+    const tasks = await Task.find(query)
+      .populate('createdBy', 'name email avatar')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching tasks', error: error.message });
+  }
+};
+
+// Get task by ID
+export const getTaskById = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id)
+      .populate('createdBy', 'name email avatar')
+      .populate('projectId', 'name');
+    
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task', error: error.message });
+  }
+};
+
+// Create new task
+export const createTask = async (req, res) => {
+  try {
+    const { projectId, title, description, status, dueDate, priority } = req.body;
+    
+    // Create Google Drive folder
+    let googleDriveFolderId = null;
+    if (req.user.googleDriveAccessToken) {
+      const folder = await createGoogleDriveFolder(
+        title,
+        req.user.googleDriveAccessToken,
+        req.user.googleDriveRefreshToken
+      );
+      googleDriveFolderId = folder.id;
+    }
+    
+    const task = new Task({
+      projectId,
+      title,
+      description,
+      status: status || 'To-Do',
+      dueDate,
+      priority: priority || 'Medium',
+      createdBy: req.user.id,
+      googleDriveFolderId
+    });
+    
+    await task.save();
+    
+    // Add creator as task member
+    const taskMember = new TaskMember({
+      taskId: task._id,
+      userId: req.user.id,
+      role: 'responsible',
+      assignedBy: req.user.id
+    });
+    
+    await taskMember.save();
+    
+    res.status(201).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating task', error: error.message });
+  }
+};
+
+// Update task
+export const updateTask = async (req, res) => {
+  try {
+    const { title, description, status, dueDate, priority } = req.body;
+    
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      { title, description, status, dueDate, priority },
+      { new: true }
+    );
+    
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating task', error: error.message });
+  }
+};
+
+// Delete task
+export const deleteTask = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    // Delete task and all related data
+    await Task.findByIdAndDelete(req.params.id);
+    await TaskMember.deleteMany({ taskId: req.params.id });
+    await Comment.deleteMany({ taskId: req.params.id });
+    
+    // Delete Google Drive folder if exists
+    // Implementation depends on your Google Drive service
+    
+    res.status(200).json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting task', error: error.message });
+  }
+};
+
+// Get subtasks
+export const getSubtasks = async (req, res) => {
+  try {
+    const subtasks = await Task.find({ parentTaskId: req.params.id })
+      .populate('createdBy', 'name email avatar');
+    
+    res.status(200).json(subtasks);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching subtasks', error: error.message });
+  }
+};
+
+// Create subtask
+export const createSubtask = async (req, res) => {
+  try {
+    const parentTask = await Task.findById(req.params.id);
+    if (!parentTask) {
+      return res.status(404).json({ message: 'Parent task not found' });
+    }
+    
+    const { title, description, status, dueDate, priority } = req.body;
+    
+    // Create Google Drive folder
+    let googleDriveFolderId = null;
+    if (req.user.googleDriveAccessToken) {
+      const folder = await createGoogleDriveFolder(
+        title,
+        req.user.googleDriveAccessToken,
+        req.user.googleDriveRefreshToken
+      );
+      googleDriveFolderId = folder.id;
+    }
+    
+    const subtask = new Task({
+      projectId: parentTask.projectId,
+      title,
+      description,
+      status: status || 'To-Do',
+      dueDate,
+      priority: priority || 'Medium',
+      createdBy: req.user.id,
+      parentTaskId: req.params.id,
+      googleDriveFolderId
+    });
+    
+    await subtask.save();
+    
+    // Add creator as task member
+    const taskMember = new TaskMember({
+      taskId: subtask._id,
+      userId: req.user.id,
+      role: 'responsible',
+      assignedBy: req.user.id
+    });
+    
+    await taskMember.save();
+    
+    res.status(201).json(subtask);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating subtask', error: error.message });
+  }
+};
+
+// Get task members
+export const getTaskMembers = async (req, res) => {
+  try {
+    const members = await TaskMember.find({ taskId: req.params.id })
+      .populate('userId', 'name email avatar')
+      .populate('assignedBy', 'name email avatar');
+    
+    res.status(200).json(members);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task members', error: error.message });
+  }
+};
+
+// Add task member
+export const addTaskMember = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is already a member
+    const existingMember = await TaskMember.findOne({
+      taskId: req.params.id,
+      userId
+    });
+    
+    if (existingMember) {
+      return res.status(400).json({ message: 'User is already assigned to this task' });
+    }
+    
+    const taskMember = new TaskMember({
+      taskId: req.params.id,
+      userId,
+      role: role || 'responsible',
+      assignedBy: req.user.id
+    });
+    
+    await taskMember.save();
+    
+    res.status(201).json(taskMember);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding task member', error: error.message });
+  }
+};
+
+// Update task member
+export const updateTaskMember = async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    const updatedMember = await TaskMember.findOneAndUpdate(
+      { taskId: req.params.id, userId: req.params.userId },
+      { role },
+      { new: true }
+    );
+    
+    if (!updatedMember) {
+      return res.status(404).json({ message: 'Task member not found' });
+    }
+    
+    res.status(200).json(updatedMember);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating task member', error: error.message });
+  }
+};
+
+// Remove task member
+export const removeTaskMember = async (req, res) => {
+  try {
+    const deletedMember = await TaskMember.findOneAndDelete({
+      taskId: req.params.id,
+      userId: req.params.userId
+    });
+    
+    if (!deletedMember) {
+      return res.status(404).json({ message: 'Task member not found' });
+    }
+    
+    res.status(200).json({ message: 'Task member removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error removing task member', error: error.message });
+  }
+};
+
+// Get task comments
+export const getTaskComments = async (req, res) => {
+  try {
+    const comments = await Comment.find({ taskId: req.params.id })
+      .populate('author', 'name email avatar')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json(comments);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task comments', error: error.message });
+  }
+};
+
+// Add task comment
+export const addTaskComment = async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    const comment = new Comment({
+      taskId: req.params.id,
+      content,
+      author: req.user.id
+    });
+    
+    await comment.save();
+    
+    // Populate author info for response
+    await comment.populate('author', 'name email avatar');
+    
+    res.status(201).json(comment);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding comment', error: error.message });
+  }
+};
+
+// Delete task comment
+export const deleteTaskComment = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId);
+    
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+    
+    // Only allow comment author or admin to delete
+    if (comment.author.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this comment' });
+    }
+    
+    await Comment.findByIdAndDelete(req.params.commentId);
+    
+    res.status(200).json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting comment', error: error.message });
+  }
+};
