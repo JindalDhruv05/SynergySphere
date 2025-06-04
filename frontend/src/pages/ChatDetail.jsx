@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 import { SOCKET_URL } from '../config';
+import Button from '../components/common/Button';
 
 export default function ChatDetail() {
   const { id } = useParams();
@@ -135,7 +136,7 @@ export default function ChatDetail() {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       </DashboardLayout>
     );
@@ -144,7 +145,7 @@ export default function ChatDetail() {
   return (
     <DashboardLayout>
       <div className="mb-6">
-        <Link to="/chats" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/chats" className="text-sm font-medium text-blue-600 hover:text-blue-500">
           &larr; Back to Chats
         </Link>
       </div>
@@ -158,14 +159,12 @@ export default function ChatDetail() {
               {chat?.type.charAt(0).toUpperCase() + chat?.type.slice(1)} chat • {members.length} members
             </p>
           </div>
-          <button
-            className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-gray-800 active:bg-gray-50"
-          >
+          <Button className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-gray-800 active:bg-gray-50">
             <svg className="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
             </svg>
             Options
-          </button>
+          </Button>
         </div>
         
         {/* Messages */}
@@ -190,8 +189,8 @@ export default function ChatDetail() {
                         {message.senderId.avatar ? (
                           <img className="h-8 w-8 rounded-full" src={message.senderId.avatar} alt={message.senderId.name} />
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-800 font-medium text-sm">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-800 font-medium text-sm">
                               {message.senderId.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -209,7 +208,7 @@ export default function ChatDetail() {
                       <div className="flex flex-col">
                         <div className={`px-4 py-2 rounded-lg ${
                           isCurrentUser 
-                            ? 'bg-primary-600 text-white' 
+                            ? 'bg-blue-600 text-white' 
                             : 'bg-gray-100 text-gray-800'
                         }`}>
                           {message.content}
@@ -231,8 +230,8 @@ export default function ChatDetail() {
                         {user.avatar ? (
                           <img className="h-8 w-8 rounded-full" src={user.avatar} alt={user.name} />
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-800 font-medium text-sm">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-800 font-medium text-sm">
                               {user.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -252,27 +251,27 @@ export default function ChatDetail() {
           <form onSubmit={handleSendMessage} className="flex">
             <input
               type="text"
-              className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="Type your message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
             />
-            <button
+            <Button
               type="submit"
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               disabled={!newMessage.trim() || submitting}
             >
               {submitting ? (
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 008-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : (
                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                 </svg>
               )}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

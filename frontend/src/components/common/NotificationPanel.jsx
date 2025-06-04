@@ -43,9 +43,9 @@ export default function NotificationPanel({ notifications }) {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium">Recent Notifications</h3>
         <button
+          type='button'
           onClick={markAllAsRead}
-          className="text-sm text-primary-600 hover:text-primary-500"
-        >
+          className="text-sm text-blue-600 hover:text-blue-500">
           Mark all as read
         </button>
       </div>
@@ -63,9 +63,9 @@ export default function NotificationPanel({ notifications }) {
                 <p className="text-sm text-gray-500">{notification.content}</p>
                 {!notification.read && (
                   <button
+                    type='button'
                     onClick={() => markAsRead(notification._id)}
-                    className="text-xs text-primary-600 hover:text-primary-500"
-                  >
+                    className="text-xs text-blue-600 hover:text-blue-500">
                     Mark as read
                   </button>
                 )}
@@ -75,7 +75,7 @@ export default function NotificationPanel({ notifications }) {
         ))}
       </ul>
       <div className="mt-4 text-center">
-        <Link to="/notifications" className="text-sm text-primary-600 hover:text-primary-500">
+        <Link to="/notifications" className="text-sm text-blue-600 hover:text-blue-500">
           View all notifications
         </Link>
       </div>

@@ -54,9 +54,9 @@ export default function ProjectDetail() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
               <button
+                type='button'
                 onClick={() => setIsCreateTaskModalOpen(true)}
-                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
+                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Add Task
               </button>
             </div>
@@ -82,7 +82,7 @@ export default function ProjectDetail() {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       </DashboardLayout>
     );
@@ -122,48 +122,47 @@ export default function ProjectDetail() {
           </dl>
         </div>
       </div>
-
       <div className="bg-white shadow rounded-lg">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex">
             <button
+              type='button'
               className={`${
                 activeTab === 'tasks'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('tasks')}
-            >
+              onClick={() => setActiveTab('tasks')}>
               Tasks
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'members'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('members')}
-            >
+              onClick={() => setActiveTab('members')}>
               Members
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'documents'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('documents')}
-            >
+              onClick={() => setActiveTab('documents')}>
               Documents
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'chat'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('chat')}
-            >
+              onClick={() => setActiveTab('chat')}>
               Chat
             </button>
           </nav>
@@ -172,7 +171,6 @@ export default function ProjectDetail() {
           {renderTabContent()}
         </div>
       </div>
-
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import Modal from '../components/common/Modal';
+import Button from '../components/common/Button';
 import api from '../services/api';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -99,19 +101,17 @@ export default function Documents() {
           <p className="mt-1 text-sm text-gray-500">Manage your files and documents</p>
         </div>
         <button
+          type='button'
           onClick={() => setIsUploadModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
-        >
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
           Upload Document
         </button>
       </div>
-
       {error && (
         <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <span className="block sm:inline">{error}</span>
         </div>
       )}
-
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -119,7 +119,7 @@ export default function Documents() {
             <input
               type="text"
               id="search"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               placeholder="Search documents"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -130,7 +130,7 @@ export default function Documents() {
             <label htmlFor="filter" className="block text-sm font-medium text-gray-700 mb-1">Filter</label>
             <select
               id="filter"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
@@ -141,10 +141,9 @@ export default function Documents() {
           </div>
         </div>
       </div>
-
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : filteredDocuments.length === 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
@@ -158,9 +157,9 @@ export default function Documents() {
             </p>
             <div className="mt-6">
               <button
+                type='button'
                 onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
-              >
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
                 Upload Document
               </button>
             </div>
@@ -204,9 +203,9 @@ export default function Documents() {
                     Download
                   </a>
                   <button
+                    type='button'
                     onClick={() => handleDeleteDocument(document._id)}
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-red-700 bg-white hover:text-red-500"
-                  >
+                    className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-red-700 bg-white hover:text-red-500">
                     Delete
                   </button>
                 </div>
@@ -214,86 +213,66 @@ export default function Documents() {
             ))}
           </ul>
         </div>
-      )}
-
-      {/* Upload Modal */}
-      {isUploadModalOpen && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <form onSubmit={handleUpload}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Upload Document
-                      </h3>
-                      <div className="mt-4 space-y-4">
-                        <div>
-                          <label htmlFor="file" className="block text-sm font-medium text-gray-700">
-                            File
-                          </label>
-                          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div className="space-y-1 text-center">
-                              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                              <div className="flex text-sm text-gray-600">
-                                <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
-                                  <span>Upload a file</span>
-                                  <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
-                                </label>
-                                <p className="pl-1">or drag and drop</p>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {file ? file.name : 'PNG, JPG, PDF, DOCX up to 10MB'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Document Name (Optional)
-                          </label>
-                          <input
-                            type="text"
-                            id="name"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Enter document name"
-                            value={fileName}
-                            onChange={(e) => setFileName(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+      )}      {/* Upload Modal */}
+      <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Upload Document" maxWidth="lg">
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label htmlFor="file" className="block text-sm font-medium text-gray-700">
+              File
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div className="space-y-1 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div className="flex text-sm text-gray-600">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                    <span>Upload a file</span>
+                    <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    disabled={!file || uploading}
-                  >
-                    {uploading ? 'Uploading...' : 'Upload'}
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    onClick={() => setIsUploadModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+                <p className="text-xs text-gray-500">
+                  {file ? file.name : 'PNG, JPG, PDF, DOCX up to 10MB'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Document Name (Optional)
+            </label>
+            <input
+              type="text"
+              id="name"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Enter document name"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!file || uploading}
+              className="flex-1 sm:flex-none"
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setIsUploadModalOpen(false)}
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </DashboardLayout>
   );
 }

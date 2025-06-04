@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import Button from '../common/Button';
+import Modal from '../common/Modal';
 
 export default function ProjectMembers({ projectId }) {
   const [members, setMembers] = useState([]);
@@ -27,10 +29,9 @@ export default function ProjectMembers({ projectId }) {
       setLoading(false);
     }
   };
-
   const fetchAvailableUsers = async () => {
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users/available');
       // Filter out users who are already members
       const memberIds = members.map(member => member.userId._id);
       const availableUsers = response.data.filter(user => !memberIds.includes(user._id));
@@ -94,7 +95,7 @@ export default function ProjectMembers({ projectId }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -103,20 +104,18 @@ export default function ProjectMembers({ projectId }) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-gray-900">Project Members</h2>
-        <button
+        <Button
           onClick={handleOpenAddMemberModal}
-          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
+          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
         >
           Add Member
-        </button>
+        </Button>
       </div>
-
       {error && (
         <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
-
       {members.length === 0 ? (
         <p className="text-gray-500 text-center py-4">No members in this project yet.</p>
       ) : (
@@ -133,8 +132,8 @@ export default function ProjectMembers({ projectId }) {
                         alt={member.userId.name} 
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-primary-800 font-medium">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-blue-800 font-medium">
                           {member.userId.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -146,7 +145,7 @@ export default function ProjectMembers({ projectId }) {
                   </div>
                   <div className="flex items-center">
                     <select
-                      className="mr-4 block pl-3 pr-10 py-1 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                      className="mr-4 block pl-3 pr-10 py-1 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                       value={member.role}
                       onChange={(e) => handleRoleChange(member.userId._id, e.target.value)}
                     >
@@ -155,9 +154,9 @@ export default function ProjectMembers({ projectId }) {
                       <option value="viewer">Viewer</option>
                     </select>
                     <button
+                      type='button'
                       onClick={() => handleRemoveMember(member.userId._id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
+                      className="text-red-600 hover:text-red-900">
                       Remove
                     </button>
                   </div>
@@ -166,86 +165,64 @@ export default function ProjectMembers({ projectId }) {
             ))}
           </ul>
         </div>
-      )}
-
-      {/* Add Member Modal */}
-      {isAddMemberModalOpen && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setIsAddMemberModalOpen(false)}></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <form onSubmit={handleAddMember}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Add Project Member
-                      </h3>
-                      <div className="mt-4 space-y-4">
-                        <div>
-                          <label htmlFor="user" className="block text-sm font-medium text-gray-700">
-                            User
-                          </label>
-                          <select
-                            id="user"
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                            value={selectedUserId}
-                            onChange={(e) => setSelectedUserId(e.target.value)}
-                            required
-                          >
-                            <option value="">Select a user</option>
-                            {availableUsers.map(user => (
-                              <option key={user._id} value={user._id}>
-                                {user.name} ({user.email})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                            Role
-                          </label>
-                          <select
-                            id="role"
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                            value={selectedRole}
-                            onChange={(e) => setSelectedRole(e.target.value)}
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="member">Member</option>
-                            <option value="viewer">Viewer</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    disabled={submitting || !selectedUserId}
-                  >
-                    {submitting ? 'Adding...' : 'Add Member'}
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    onClick={() => setIsAddMemberModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+      )}      {/* Add Member Modal */}
+      <Modal isOpen={isAddMemberModalOpen} onClose={() => setIsAddMemberModalOpen(false)} title="Add Project Member" maxWidth="lg">
+        <form onSubmit={handleAddMember} className="space-y-4">
+          <div>
+            <label htmlFor="user" className="block text-sm font-medium text-gray-700">
+              User
+            </label>
+            <select
+              id="user"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              required
+            >
+              <option value="">Select a user</option>
+              {availableUsers.map(user => (
+                <option key={user._id} value={user._id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-      )}
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+              Role
+            </label>
+            <select
+              id="role"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              <option value="admin">Admin</option>
+              <option value="member">Member</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </div>
+          
+          <div className="mt-6 flex flex-col sm:flex-row-reverse gap-3">
+            <Button
+              type="submit"
+              disabled={submitting || !selectedUserId}
+              variant="primary"
+              className="flex-1 sm:flex-none"
+            >
+              {submitting ? 'Adding...' : 'Add Member'}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setIsAddMemberModalOpen(false)}
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

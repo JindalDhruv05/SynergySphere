@@ -13,6 +13,17 @@ export const getUsers = async (req, res) => {
   }
 };
 
+// Get available users for adding to projects/chats (authenticated users only)
+export const getAvailableUsers = async (req, res) => {
+  try {
+    // Return basic user info (name, email, avatar) for all users except sensitive data
+    const users = await User.find().select('name email avatar');
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching available users', error: error.message });
+  }
+};
+
 // Get user by ID
 export const getUserById = async (req, res) => {
   try {

@@ -1,6 +1,7 @@
 import express from "express";
 import { 
   getUsers, 
+  getAvailableUsers,
   getUserById, 
   createUser, 
   updateUser, 
@@ -23,6 +24,7 @@ router.post('/reset-password', resetPassword);
 
 // Protected routes
 router.get('/', verifyToken, isAdmin, getUsers);
+router.get('/available', verifyToken, getAvailableUsers);
 router.get('/me', verifyToken, getCurrentUser);
 router.get('/:id', verifyToken, getUserById);
 router.put('/:id', verifyToken, updateUser);

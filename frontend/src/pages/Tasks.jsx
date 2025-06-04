@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import TaskList from '../components/task/TaskList';
+import TaskKanbanBoard from '../components/task/TaskKanbanBoard';
 import api from '../services/api';
 
 export default function Tasks() {
@@ -80,10 +80,9 @@ export default function Tasks() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your tasks</p>
-        </div>
-        <Link
+        </div>        <Link
           to="/tasks/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-black bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           Create Task
         </Link>
@@ -96,7 +95,7 @@ export default function Tasks() {
             <input
               type="text"
               id="search"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               placeholder="Search tasks"
               value={filters.searchQuery}
               onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
@@ -107,7 +106,7 @@ export default function Tasks() {
             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               id="status"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
             >
@@ -122,7 +121,7 @@ export default function Tasks() {
             <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
             <select
               id="priority"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               value={filters.priority}
               onChange={(e) => handleFilterChange('priority', e.target.value)}
             >
@@ -137,7 +136,7 @@ export default function Tasks() {
             <label htmlFor="project" className="block text-sm font-medium text-gray-700 mb-1">Project</label>
             <select
               id="project"
-              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
               value={filters.projectId}
               onChange={(e) => handleFilterChange('projectId', e.target.value)}
             >
@@ -152,7 +151,7 @@ export default function Tasks() {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : filteredTasks.length === 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
@@ -160,7 +159,7 @@ export default function Tasks() {
             <p className="text-gray-500 mb-4">No tasks found matching your criteria</p>
             <Link
               to="/tasks/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Create a new task
             </Link>
@@ -168,7 +167,10 @@ export default function Tasks() {
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg">
-          <TaskList tasks={filteredTasks} projects={projects} />
+          <TaskKanbanBoard
+            projectId={filters.projectId}
+            onTaskClick={(task) => window.location.href = `/tasks/${task._id}`}
+          />
         </div>
       )}
     </DashboardLayout>

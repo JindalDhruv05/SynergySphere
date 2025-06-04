@@ -116,7 +116,7 @@ export default function TaskDetail() {
                   <input
                     id="title"
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     value={editedTask.title || ''}
                     onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
                   />
@@ -127,7 +127,7 @@ export default function TaskDetail() {
                   <textarea
                     id="description"
                     rows={4}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     value={editedTask.description || ''}
                     onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
                   />
@@ -138,7 +138,7 @@ export default function TaskDetail() {
                     <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
                     <select
                       id="status"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       value={editedTask.status || ''}
                       onChange={(e) => setEditedTask({ ...editedTask, status: e.target.value })}
                     >
@@ -152,7 +152,7 @@ export default function TaskDetail() {
                     <label htmlFor="priority" className="block text-sm font-medium text-gray-700">Priority</label>
                     <select
                       id="priority"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       value={editedTask.priority || ''}
                       onChange={(e) => setEditedTask({ ...editedTask, priority: e.target.value })}
                     >
@@ -168,7 +168,7 @@ export default function TaskDetail() {
                   <input
                     id="dueDate"
                     type="date"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     value={editedTask.dueDate ? new Date(editedTask.dueDate).toISOString().split('T')[0] : ''}
                     onChange={(e) => setEditedTask({ ...editedTask, dueDate: e.target.value })}
                   />
@@ -184,7 +184,7 @@ export default function TaskDetail() {
                   </button>
                   <button
                     type="button"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                     onClick={handleTaskUpdate}
                     disabled={submitting}
                   >
@@ -226,7 +226,7 @@ export default function TaskDetail() {
                     <h3 className="text-sm font-medium text-gray-500">Status</h3>
                     <div className="mt-2">
                       <select
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         value={task?.status || ''}
                         onChange={(e) => handleStatusChange(e.target.value)}
                       >
@@ -273,7 +273,7 @@ export default function TaskDetail() {
               <h2 className="text-lg font-medium text-gray-900">Subtasks</h2>
               <Link
                 to={`/tasks/${id}/create-subtask`}
-                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
               >
                 Add Subtask
               </Link>
@@ -322,14 +322,13 @@ export default function TaskDetail() {
         return (
           <div>
             <h2 className="text-lg font-medium text-gray-900 mb-4">Comments</h2>
-            
             <form onSubmit={handleAddComment} className="mb-6">
               <div>
                 <label htmlFor="comment" className="sr-only">Add a comment</label>
                 <textarea
                   id="comment"
                   rows={3}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -338,14 +337,13 @@ export default function TaskDetail() {
               <div className="mt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   disabled={!newComment.trim() || submitting}
                 >
                   {submitting ? 'Posting...' : 'Post'}
                 </button>
               </div>
             </form>
-            
             {comments.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No comments yet</p>
             ) : (
@@ -358,8 +356,8 @@ export default function TaskDetail() {
                           {comment.author.avatar ? (
                             <img className="h-10 w-10 rounded-full" src={comment.author.avatar} alt={comment.author.name} />
                           ) : (
-                            <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                              <span className="text-primary-800 font-medium">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-800 font-medium">
                                 {comment.author.name.charAt(0).toUpperCase()}
                               </span>
                             </div>
@@ -373,9 +371,9 @@ export default function TaskDetail() {
                         </div>
                       </div>
                       <button
+                        type='button'
                         onClick={() => handleDeleteComment(comment._id)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
+                        className="text-gray-400 hover:text-gray-600">
                         <span className="sr-only">Delete comment</span>
                         <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -398,12 +396,11 @@ export default function TaskDetail() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">Assigned Members</h2>
               <button
-                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-              >
+                type='button'
+                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                 Add Member
               </button>
             </div>
-            
             {members.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No members assigned</p>
             ) : (
@@ -414,8 +411,8 @@ export default function TaskDetail() {
                       {member.userId.avatar ? (
                         <img className="h-10 w-10 rounded-full" src={member.userId.avatar} alt={member.userId.name} />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                          <span className="text-primary-800 font-medium">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-800 font-medium">
                             {member.userId.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -443,12 +440,11 @@ export default function TaskDetail() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">Documents</h2>
               <button
-                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-              >
+                type='button'
+                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                 Upload Document
               </button>
             </div>
-            
             {documents.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No documents attached</p>
             ) : (
@@ -507,7 +503,7 @@ export default function TaskDetail() {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       </DashboardLayout>
     );
@@ -526,62 +522,61 @@ export default function TaskDetail() {
   return (
     <DashboardLayout>
       <div className="mb-6">
-        <Link to="/tasks" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/tasks" className="text-sm font-medium text-blue-600 hover:text-blue-500">
           &larr; Back to Tasks
         </Link>
       </div>
-      
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex">
             <button
+              type='button'
               className={`${
                 activeTab === 'details'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('details')}
-            >
+              onClick={() => setActiveTab('details')}>
               Details
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'subtasks'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('subtasks')}
-            >
+              onClick={() => setActiveTab('subtasks')}>
               Subtasks
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'comments'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('comments')}
-            >
+              onClick={() => setActiveTab('comments')}>
               Comments
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'members'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('members')}
-            >
+              onClick={() => setActiveTab('members')}>
               Members
             </button>
             <button
+              type='button'
               className={`${
                 activeTab === 'documents'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
-              onClick={() => setActiveTab('documents')}
-            >
+              onClick={() => setActiveTab('documents')}>
               Documents
             </button>
           </nav>

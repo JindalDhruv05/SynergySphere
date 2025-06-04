@@ -23,7 +23,11 @@ export default function DashboardLayout({ children, title }) {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (profileDropdownOpen && !event.target.closest('#user-menu-button')) {
+      if (
+        profileDropdownOpen &&
+        !event.target.closest('#user-menu-button') &&
+        !event.target.closest('#user-menu-dropdown')
+      ) {
         setProfileDropdownOpen(false);
       }
     }
@@ -37,8 +41,8 @@ export default function DashboardLayout({ children, title }) {
     setProfileDropdownOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -68,7 +72,6 @@ export default function DashboardLayout({ children, title }) {
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
-      
       {/* Mobile sidebar */}
       <div className={`fixed inset-y-0 left-0 z-40 w-full max-w-xs transform bg-white transition duration-300 ease-in-out lg:hidden ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -76,11 +79,11 @@ export default function DashboardLayout({ children, title }) {
         <div className="h-full flex flex-col overflow-y-auto">
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-primary-600">SynergySphere</span>
+              <span className="text-xl font-bold text-blue-600">SynergySphere</span>
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
               onClick={() => setSidebarOpen(false)}
             >
               <span className="sr-only">Close sidebar</span>
@@ -95,7 +98,7 @@ export default function DashboardLayout({ children, title }) {
                 to={item.href}
                 className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
                   isActive(item.href)
-                    ? 'bg-primary-50 text-primary-700'
+                    ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
                 onClick={() => setSidebarOpen(false)}
@@ -103,7 +106,7 @@ export default function DashboardLayout({ children, title }) {
                 <item.icon 
                   className={`mr-4 h-6 w-6 ${
                     isActive(item.href) 
-                      ? 'text-primary-500' 
+                      ? 'text-blue-500' 
                       : 'text-gray-400 group-hover:text-gray-500'
                   }`} 
                   aria-hidden="true" 
@@ -114,12 +117,11 @@ export default function DashboardLayout({ children, title }) {
           </nav>
         </div>
       </div>
-
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
         <div className="flex flex-col flex-grow border-r border-gray-200 bg-white overflow-y-auto">
           <div className="flex items-center h-16 flex-shrink-0 px-4 border-b border-gray-200">
-            <span className="text-xl font-bold text-primary-600">SynergySphere</span>
+            <span className="text-xl font-bold text-blue-600">SynergySphere</span>
           </div>
           <div className="flex-grow flex flex-col">
             <nav className="flex-1 px-2 py-4 space-y-1">
@@ -129,14 +131,14 @@ export default function DashboardLayout({ children, title }) {
                   to={item.href}
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
                     isActive(item.href)
-                      ? 'bg-primary-50 text-primary-700'
+                      ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <item.icon 
                     className={`mr-3 h-6 w-6 ${
                       isActive(item.href) 
-                        ? 'text-primary-500' 
+                        ? 'text-blue-500' 
                         : 'text-gray-400 group-hover:text-gray-500'
                     }`} 
                     aria-hidden="true" 
@@ -148,13 +150,12 @@ export default function DashboardLayout({ children, title }) {
           </div>
         </div>
       </div>
-
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1">
         <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden"
+            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
@@ -168,7 +169,7 @@ export default function DashboardLayout({ children, title }) {
             <div className="ml-4 flex items-center md:ml-6">
               <button 
                 type="button"
-                className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <span className="sr-only">View notifications</span>
                 <BellIcon className="h-6 w-6" aria-hidden="true" />
@@ -179,7 +180,7 @@ export default function DashboardLayout({ children, title }) {
                 <div>
                   <button
                     type="button"
-                    className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     id="user-menu-button"
                     aria-expanded="false"
                     aria-haspopup="true"
@@ -197,12 +198,13 @@ export default function DashboardLayout({ children, title }) {
                 
                 {/* Dropdown menu */}
                 {profileDropdownOpen && (
-                  <div 
-                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                    role="menu"
-                    aria-orientation="vertical"
-                    aria-labelledby="user-menu-button"
-                  >
+                  <div id="user-menu-dropdown"
+                     className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                     role="menu"
+                     aria-orientation="vertical"
+                     aria-labelledby="user-menu-button"
+                     onMouseDown={(e) => e.stopPropagation()}
+                   >
                     <Link 
                       to="/profile" 
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -218,10 +220,10 @@ export default function DashboardLayout({ children, title }) {
                       Settings
                     </Link>
                     <button
+                      type='button'
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      role="menuitem"
-                    >
+                      role="menuitem">
                       Sign out
                     </button>
                   </div>

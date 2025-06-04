@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
 import { format } from 'date-fns';
+import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
 
 export default function Chats() {
   const [chats, setChats] = useState([]);
@@ -31,10 +33,9 @@ export default function Chats() {
       setLoading(false);
     }
   };
-
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users/available');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -95,12 +96,12 @@ export default function Chats() {
           <h1 className="text-3xl font-bold text-gray-900">Chats</h1>
           <p className="mt-1 text-sm text-gray-500">Communicate with your team</p>
         </div>
-        <button
+        <Button
           onClick={() => setIsCreateChatModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
         >
           New Chat
-        </button>
+        </Button>
       </div>
 
       <div className="mb-6">
@@ -114,7 +115,7 @@ export default function Chats() {
           <input
             id="search"
             name="search"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             placeholder="Search chats"
             type="search"
             value={searchQuery}
@@ -125,17 +126,17 @@ export default function Chats() {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : filteredChats.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">No chats found</p>
-          <button
+          <Button
             onClick={() => setIsCreateChatModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
           >
             Start a new conversation
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -178,120 +179,100 @@ export default function Chats() {
             ))}
           </ul>
         </div>
-      )}
-
-      {/* Create Chat Modal */}
-      {isCreateChatModalOpen && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <form onSubmit={handleCreateChat}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Create New Chat
-                      </h3>
-                      <div className="mt-4 space-y-4">
-                        <div>
-                          <label htmlFor="chat-type" className="block text-sm font-medium text-gray-700">
-                            Chat Type
-                          </label>
-                          <select
-                            id="chat-type"
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                            value={chatType}
-                            onChange={(e) => setChatType(e.target.value)}
-                          >
-                            <option value="personal">Personal</option>
-                            <option value="group">Group</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="chat-name" className="block text-sm font-medium text-gray-700">
-                            Chat Name {chatType === 'personal' && '(Optional)'}
-                          </label>
-                          <input
-                            type="text"
-                            id="chat-name"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Enter chat name"
-                            value={chatName}
-                            onChange={(e) => setChatName(e.target.value)}
-                            required={chatType !== 'personal'}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Select Members
-                          </label>
-                          <div className="mt-1">
-                            <input
-                              type="text"
-                              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                              placeholder="Search users..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                          </div>
-                          <div className="mt-2 max-h-48 overflow-y-auto">
-                            <ul className="divide-y divide-gray-200">
-                              {filteredUsers.map((user) => (
-                                <li key={user._id} className="py-2">
-                                  <div className="flex items-center">
-                                    <input
-                                      id={`user-${user._id}`}
-                                      name={`user-${user._id}`}
-                                      type="checkbox"
-                                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                                      checked={selectedMembers.includes(user._id)}
-                                      onChange={() => toggleMemberSelection(user._id)}
-                                    />
-                                    <label htmlFor={`user-${user._id}`} className="ml-3 block text-sm font-medium text-gray-700">
-                                      {user.name} ({user.email})
-                                    </label>
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          {selectedMembers.length > 0 && (
-                            <div className="mt-2 text-sm text-gray-500">
-                              {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    disabled={submitting || (chatType === 'personal' && selectedMembers.length === 0)}
-                  >
-                    {submitting ? 'Creating...' : 'Create'}
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    onClick={() => setIsCreateChatModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+      )}      {/* Create Chat Modal */}
+      <Modal isOpen={isCreateChatModalOpen} onClose={() => setIsCreateChatModalOpen(false)} title="Create New Chat" maxWidth="lg">
+        <form onSubmit={handleCreateChat} className="space-y-4">
+          <div>
+            <label htmlFor="chat-type" className="block text-sm font-medium text-gray-700">
+              Chat Type
+            </label>
+            <select
+              id="chat-type"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              value={chatType}
+              onChange={(e) => setChatType(e.target.value)}
+            >
+              <option value="personal">Personal</option>
+              <option value="group">Group</option>
+            </select>
           </div>
-        </div>
-      )}
+          
+          <div>
+            <label htmlFor="chat-name" className="block text-sm font-medium text-gray-700">
+              Chat Name {chatType === 'personal' && '(Optional)'}
+            </label>
+            <input
+              type="text"
+              id="chat-name"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Enter chat name"
+              value={chatName}
+              onChange={(e) => setChatName(e.target.value)}
+              required={chatType !== 'personal'}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Select Members
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="mt-2 max-h-48 overflow-y-auto">
+              <ul className="divide-y divide-gray-200">
+                {filteredUsers.map((user) => (
+                  <li key={user._id} className="py-2">
+                    <div className="flex items-center">
+                      <input
+                        id={`user-${user._id}`}
+                        name={`user-${user._id}`}
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked={selectedMembers.includes(user._id)}
+                        onChange={() => toggleMemberSelection(user._id)}
+                      />
+                      <label htmlFor={`user-${user._id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                        {user.name} ({user.email})
+                      </label>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {selectedMembers.length > 0 && (
+              <div className="mt-2 text-sm text-gray-500">
+                {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-6 flex flex-col sm:flex-row-reverse gap-3">
+            <Button
+              type="submit"
+              disabled={submitting || (chatType === 'personal' && selectedMembers.length === 0)}
+              variant="primary"
+              className="flex-1 sm:flex-none"
+            >
+              {submitting ? 'Creating...' : 'Create'}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setIsCreateChatModalOpen(false)}
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </DashboardLayout>
   );
 }

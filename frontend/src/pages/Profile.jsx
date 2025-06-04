@@ -135,7 +135,7 @@ export default function Profile() {
                     type="text"
                     name="name"
                     id="name"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     value={formData.name}
                     onChange={handleChange}
                   />
@@ -149,7 +149,7 @@ export default function Profile() {
                     type="email"
                     name="email"
                     id="email"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-100"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-100"
                     value={formData.email}
                     disabled
                   />
@@ -166,7 +166,7 @@ export default function Profile() {
                     type="text"
                     name="avatar"
                     id="avatar"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     value={formData.avatar}
                     onChange={handleChange}
                     placeholder="https://example.com/avatar.jpg"
@@ -180,7 +180,7 @@ export default function Profile() {
               <div className="mt-6">
                 <button
                   type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save changes'}
@@ -210,7 +210,7 @@ export default function Profile() {
                     type="password"
                     name="currentPassword"
                     id="currentPassword"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     required
@@ -225,7 +225,7 @@ export default function Profile() {
                     type="password"
                     name="newPassword"
                     id="newPassword"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     required
@@ -241,7 +241,7 @@ export default function Profile() {
                     type="password"
                     name="confirmPassword"
                     id="confirmPassword"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     required
@@ -253,7 +253,7 @@ export default function Profile() {
               <div className="mt-6">
                 <button
                   type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   disabled={passwordLoading}
                 >
                   {passwordLoading ? 'Updating...' : 'Update password'}
@@ -287,7 +287,7 @@ export default function Profile() {
                   <button
                     type="button"
                     onClick={handleConnectGoogleDrive}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                   >
                     Connect
                   </button>

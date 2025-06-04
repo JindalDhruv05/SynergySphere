@@ -43,15 +43,13 @@ export default function Projects() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your projects</p>
-        </div>
-        <button
+        </div>        <button
+          type='button'
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-black bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
           Create Project
         </button>
       </div>
-
       <div className="mb-6">
         <label htmlFor="search" className="sr-only">Search projects</label>
         <div className="relative">
@@ -63,7 +61,7 @@ export default function Projects() {
           <input
             id="search"
             name="search"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             placeholder="Search projects"
             type="search"
             value={searchQuery}
@@ -71,10 +69,9 @@ export default function Projects() {
           />
         </div>
       </div>
-
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="text-center py-12">
@@ -84,9 +81,9 @@ export default function Projects() {
             <div>
               <p className="text-gray-500 mb-4">You don't have any projects yet.</p>
               <button
+                type='button'
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Create your first project
               </button>
             </div>
@@ -99,7 +96,6 @@ export default function Projects() {
           ))}
         </div>
       )}
-
       {/* The modal component should always be rendered, but conditionally displayed */}
       <CreateProjectModal 
         isOpen={isModalOpen} 

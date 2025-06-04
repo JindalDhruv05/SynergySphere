@@ -199,6 +199,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Provide a hook to consume auth context
 export const useAuth = () => useContext(AuthContext);
 
 // Export the API instance for use in other parts of the app

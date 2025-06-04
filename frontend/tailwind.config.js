@@ -18,9 +18,14 @@ export default {
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
+          950: '#0c4a6e',
         },
       },
     },
   },
   plugins: [],
+  // Tailwind v4 specific configuration
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
 }

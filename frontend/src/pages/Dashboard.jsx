@@ -51,10 +51,9 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-500">Welcome to SynergySphere</p>
       </div>
-
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -62,7 +61,7 @@ export default function Dashboard() {
             <section className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">My Projects</h2>
-                <Link to="/projects/new" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                <Link to="/projects/new" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                   Create new project
                 </Link>
               </div>
@@ -70,7 +69,7 @@ export default function Dashboard() {
               {projects.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <p>You don't have any projects yet.</p>
-                  <Link to="/projects/new" className="text-primary-600 hover:underline mt-2 inline-block">
+                  <Link to="/projects/new" className="text-blue-600 hover:underline mt-2 inline-block">
                     Create your first project
                   </Link>
                 </div>
@@ -84,7 +83,7 @@ export default function Dashboard() {
               
               {projects.length > 4 && (
                 <div className="mt-4 text-center">
-                  <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                  <Link to="/projects" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                     View all projects
                   </Link>
                 </div>
@@ -94,7 +93,7 @@ export default function Dashboard() {
             <section className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">Recent Tasks</h2>
-                <Link to="/tasks" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                <Link to="/tasks" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                   View all tasks
                 </Link>
               </div>
@@ -112,10 +111,10 @@ export default function Dashboard() {
             <section className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">
-                <button 
+                <button
+                  type='button'
                   onClick={() => setIsTaskModalOpen(true)}
-                  className="block w-full text-left px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
+                  className="block w-full text-left px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                   Create new task
                 </button>
                 <Link 
@@ -135,7 +134,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
       {/* Task Creation Modal */}
       <CreateTaskModal 
         isOpen={isTaskModalOpen}
