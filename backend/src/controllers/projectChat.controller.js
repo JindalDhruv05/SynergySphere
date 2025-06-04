@@ -11,6 +11,11 @@ export const getProjectChat = async (req, res) => {
     if (!projectChat) {
       return res.status(404).json({ message: 'Project chat not found' });
     }
+    // Dynamically set chat name to project name
+    const project = await Project.findById(req.params.projectId).select('name');
+    if (project && projectChat.chatId) {
+      projectChat.chatId.name = project.name;
+    }
     
     res.status(200).json(projectChat);
   } catch (error) {

@@ -2,18 +2,77 @@ import Chat from '../models/chat.model.js';
 import ChatMember from '../models/chatMember.model.js';
 import Message from '../models/message.model.js';
 import User from '../models/user.model.js';
-import { getSocketInstance } from '../socket/socketHandlers.js';
+import { getSocketInstance, getConnectedUsers } from '../socket/socketHandlers.js';
+import ProjectChat from '../models/projectChat.model.js';
+import Project from '../models/project.model.js';
+import TaskChat from '../models/taskChat.model.js';
+import Task from '../models/task.model.js';
+import ProjectMember from '../models/projectMember.model.js';
+import TaskMember from '../models/taskMember.model.js';
+
 // Get all chats for current user
 export const getChats = async (req, res) => {
   try {
-    // Find all chats where user is a member
+    // Auto-create project chats for user's projects
+    const userProjects = await ProjectMember.find({ userId: req.user.id }).select('projectId');
+    for (const { projectId } of userProjects) {
+      let pc = await ProjectChat.findOne({ projectId });
+      if (!pc) {
+        const project = await Project.findById(projectId).select('name');
+        const chatDoc = new Chat({ type: 'project', name: project?.name || 'Project Chat' });
+        await chatDoc.save();
+        pc = new ProjectChat({ chatId: chatDoc._id, projectId });
+        await pc.save();
+      }
+    }
+    // Auto-create task chats for user's tasks
+    const userTasks = await TaskMember.find({ userId: req.user.id }).select('taskId');
+    for (const { taskId } of userTasks) {
+      let tc = await TaskChat.findOne({ taskId });
+      if (!tc) {
+        const task = await Task.findById(taskId).select('title');
+        const chatDoc = new Chat({ type: 'task', name: task?.title || 'Task Chat' });
+        await chatDoc.save();
+        tc = new TaskChat({ chatId: chatDoc._id, taskId });
+        await tc.save();
+      }
+    }
+    // Ensure project/task chat memberships are up to date
+    const projectChats = await ProjectChat.find();
+    await Promise.all(projectChats.map(pc => pc.syncWithProjectMembers()));
+    const taskChats = await TaskChat.find();
+    await Promise.all(taskChats.map(tc => tc.syncWithTaskMembers()));
+    // Fetch all chats for current user
     const chatMembers = await ChatMember.find({ userId: req.user.id });
     const chatIds = chatMembers.map(cm => cm.chatId);
-    
+
+    // Fetch chat documents
     const chats = await Chat.find({ _id: { $in: chatIds } })
-      .sort({ updatedAt: -1 });
-    
-    res.status(200).json(chats);
+      .sort({ updatedAt: -1 })
+      .lean();
+    const chatsWithDisplayName = await Promise.all(chats.map(async chat => {
+      if (chat.type === 'personal') {
+        const members = await ChatMember.find({ chatId: chat._id });
+        const otherMember = members.find(m => m.userId.toString() !== req.user.id);
+        const otherUser = await User.findById(otherMember.userId).select('name');
+        return { ...chat, name: otherUser ? otherUser.name : chat.name };
+      } else if (chat.type === 'project') {
+        const pc = await ProjectChat.findOne({ chatId: chat._id });
+        if (pc) {
+          const project = await Project.findById(pc.projectId).select('name');
+          return { ...chat, name: project ? project.name : chat.name };
+        }
+      } else if (chat.type === 'task') {
+        const tc = await TaskChat.findOne({ chatId: chat._id });
+        if (tc) {
+          const task = await Task.findById(tc.taskId).select('title');
+          return { ...chat, name: task ? task.title : chat.name };
+        }
+      }
+      return chat;
+    }));
+
+    res.status(200).json(chatsWithDisplayName);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching chats', error: error.message });
   }
@@ -38,32 +97,49 @@ export const getChatById = async (req, res) => {
 export const createChat = async (req, res) => {
   try {
     const { type, name, memberIds } = req.body;
-    
+    let chatName = name;
+
+    // Personal chat: require exactly one other member
+    if (type === 'personal') {
+      if (!memberIds || memberIds.length !== 1) {
+        return res.status(400).json({ message: 'Personal chat requires exactly one other member' });
+      }
+      const otherUser = await User.findById(memberIds[0]);
+      if (!otherUser) {
+        return res.status(404).json({ message: 'User not found for personal chat' });
+      }
+      chatName = `${otherUser.name} (${otherUser.email})`;
+    }
+    // Group chat: require a name and at least one other member
+    if (type === 'group') {
+      if (!memberIds || memberIds.length < 1) {
+        return res.status(400).json({ message: 'Group chat requires at least one other member' });
+      }
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: 'Group chat requires a name' });
+      }
+      chatName = name.trim();
+    }
+
+    // Create chat document
     const chat = new Chat({
       type,
-      name: name || 'New Chat'
+      name: chatName || (type === 'group' ? '' : 'New Chat')
     });
-    
     await chat.save();
-    
-    // Add creator as chat member
-    const creatorMember = new ChatMember({
-      chatId: chat._id,
-      userId: req.user.id
-    });
-    
-    await creatorMember.save();
-    
-    // Add other members if provided
-    if (memberIds && memberIds.length > 0) {
-      const members = memberIds.map(userId => ({
-        chatId: chat._id,
-        userId
-      }));
-      
-      await ChatMember.insertMany(members);
+
+    // Add members: creator and others
+    const membersToAdd = [req.user.id];
+    if (memberIds && memberIds.length) {
+      membersToAdd.push(...memberIds);
     }
-    
+    // Remove duplicates
+    const uniqueMembers = Array.from(new Set(membersToAdd));
+
+    // Insert ChatMember entries
+    const chatMemberDocs = uniqueMembers.map(userId => ({ chatId: chat._id, userId }));
+    await ChatMember.insertMany(chatMemberDocs);
+
     res.status(201).json(chat);
   } catch (error) {
     res.status(500).json({ message: 'Error creating chat', error: error.message });
@@ -154,7 +230,7 @@ export const addChatMember = async (req, res) => {
     const io = getSocketInstance();
     if (io) {
       // Get user socket and join them to chat room
-      const userSocketId = connectedUsers.get(userId);
+      const userSocketId = getConnectedUsers().get(userId);
       if (userSocketId) {
         const userSocket = io.sockets.sockets.get(userSocketId);
         if (userSocket) {
@@ -169,9 +245,6 @@ export const addChatMember = async (req, res) => {
         memberInfo: await User.findById(userId).select('name email avatar')
       });
     }
-    
-    res.status(201).json(chatMember);
-
     
     res.status(201).json(chatMember);
   } catch (error) {

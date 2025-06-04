@@ -11,6 +11,13 @@ export const getTaskChat = async (req, res) => {
     if (!taskChat) {
       return res.status(404).json({ message: 'Task chat not found' });
     }
+    // Dynamically set chat name to task title
+    if (taskChat.chatId) {
+      const task = await Task.findById(req.params.taskId).select('title');
+      if (task) {
+        taskChat.chatId.name = task.title;
+      }
+    }
     
     res.status(200).json(taskChat);
   } catch (error) {
