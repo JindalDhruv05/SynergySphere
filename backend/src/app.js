@@ -22,7 +22,10 @@ const app = express();
 app.use(helmet());
 
 // CORS setup
-app.use(cors());
+app.use(cors({
+  origin: config.get('frontend.url'),
+  credentials: true
+}));
 
 // Request parsing
 app.use(express.json());

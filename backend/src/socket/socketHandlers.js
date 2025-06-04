@@ -1,0 +1,206 @@
+// socket/socketHandlers.js
+import jwt from 'jsonwebtoken';
+import User from '../models/user.model.js';
+import Chat from '../models/chat.model.js';
+import Message from '../models/message.model.js';
+import ChatMember from '../models/chatMember.model.js';
+
+let io = null; // Store the io instance
+const connectedUsers = new Map(); // Store socket connections
+
+export const initializeSocketHandlers = (socketIo) => {
+  io = socketIo; // Store the instance for later use
+    // Authentication middleware for Socket.IO
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+      
+      if (!token) {
+        console.log('❌ Socket connection rejected: No token provided');
+        return next(new Error('Authentication error'));
+      }
+      
+      console.log('🔐 Attempting to verify token for socket connection...');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      
+      if (!user) {
+        console.log('❌ Socket connection rejected: User not found');
+        return next(new Error('User not found'));
+      }
+      
+      console.log('✅ Socket authentication successful for user:', user.name);
+      socket.user = user;
+      next();    } catch (error) {
+      console.log('❌ Socket authentication error:', error.message);
+      next(new Error('Authentication error'));
+    }
+  });
+
+  io.on('connection', (socket) => {
+    console.log(`User ${socket.user.name} connected: ${socket.id}`);
+    
+    // Store user connection
+    connectedUsers.set(socket.user.id.toString(), socket.id);
+    
+    // Join user to their chats
+    handleJoinUserChats(socket);
+    
+    // Handle chat events
+    handleChatEvents(socket, io);
+    
+    // Handle disconnection
+    socket.on('disconnect', () => {
+      console.log(`User ${socket.user.name} disconnected: ${socket.id}`);
+      connectedUsers.delete(socket.user.id.toString());
+    });
+  });
+};
+
+// Export function to get the socket instance
+export const getSocketInstance = () => {
+  if (!io) {
+    throw new Error('Socket.IO not initialized');
+  }
+  return io;
+};
+
+// Export function to get connected users
+export const getConnectedUsers = () => {
+  return connectedUsers;
+};
+
+const handleJoinUserChats = async (socket) => {
+  try {
+    // Get all chats where user is a member
+    const chatMembers = await ChatMember.find({ userId: socket.user.id });
+    
+    // Join socket to each chat room
+    for (const member of chatMembers) {
+      socket.join(`chat_${member.chatId}`);
+    }
+    
+    console.log(`User ${socket.user.name} joined ${chatMembers.length} chat rooms`);
+  } catch (error) {
+    console.error('Error joining user chats:', error);
+  }
+};
+
+const handleChatEvents = (socket, io) => {
+  // Join a specific chat
+  socket.on('join_chat', async (chatId) => {
+    try {
+      // Verify user is member of this chat
+      const isMember = await ChatMember.exists({
+        chatId,
+        userId: socket.user.id
+      });
+      
+      if (isMember) {
+        socket.join(`chat_${chatId}`);
+        socket.emit('joined_chat', { chatId, success: true });
+      } else {
+        socket.emit('joined_chat', { chatId, success: false, error: 'Not a member' });
+      }
+    } catch (error) {
+      socket.emit('joined_chat', { chatId, success: false, error: error.message });
+    }
+  });
+
+  // Send message
+  socket.on('send_message', async (data) => {
+    try {
+      const { chatId, content } = data;
+      
+      // Verify user is member of this chat
+      const isMember = await ChatMember.exists({
+        chatId,
+        userId: socket.user.id
+      });
+      
+      if (!isMember) {
+        socket.emit('message_error', { error: 'Not authorized to send message' });
+        return;
+      }
+      
+      // Create and save message
+      const message = new Message({
+        chatId,
+        senderId: socket.user.id,
+        content,
+        readBy: [socket.user.id] // Sender has read the message
+      });
+      
+      await message.save();
+      
+      // Populate sender info
+      await message.populate('senderId', 'name email avatar');
+      
+      // Update chat's updatedAt timestamp
+      await Chat.findByIdAndUpdate(chatId, { updatedAt: Date.now() });
+      
+      // Emit message to all users in the chat room
+      io.to(`chat_${chatId}`).emit('new_message', {
+        _id: message._id,
+        chatId: message.chatId,
+        senderId: message.senderId,
+        content: message.content,
+        readBy: message.readBy,
+        createdAt: message.createdAt
+      });
+      
+    } catch (error) {
+      socket.emit('message_error', { error: error.message });
+    }
+  });
+
+  // Mark messages as read
+  socket.on('mark_messages_read', async (data) => {
+    try {
+      const { chatId, messageIds } = data;
+      
+      // Update messages to include user in readBy array
+      await Message.updateMany(
+        { 
+          _id: { $in: messageIds },
+          chatId,
+          readBy: { $ne: socket.user.id }
+        },
+        { $addToSet: { readBy: socket.user.id } }
+      );
+      
+      // Notify other users in chat that messages were read
+      socket.to(`chat_${chatId}`).emit('messages_read', {
+        userId: socket.user.id,
+        messageIds
+      });
+      
+    } catch (error) {
+      socket.emit('read_error', { error: error.message });
+    }
+  });
+
+  // User typing indicator
+  socket.on('typing_start', (data) => {
+    const { chatId } = data;
+    socket.to(`chat_${chatId}`).emit('user_typing', {
+      userId: socket.user.id,
+      userName: socket.user.name,
+      chatId
+    });
+  });
+
+  socket.on('typing_stop', (data) => {
+    const { chatId } = data;
+    socket.to(`chat_${chatId}`).emit('user_stopped_typing', {
+      userId: socket.user.id,
+      chatId
+    });
+  });
+
+  // Leave chat
+  socket.on('leave_chat', (chatId) => {
+    socket.leave(`chat_${chatId}`);
+    socket.emit('left_chat', { chatId });
+  });
+};

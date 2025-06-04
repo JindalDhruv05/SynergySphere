@@ -55,18 +55,22 @@ api.interceptors.response.use(
 );
 
 export const AuthProvider = ({ children }) => {
+  // Track authenticated user and JWT token
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const storedToken = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
         
-        if (token && userId) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        if (storedToken && userId) {
+          // Set token state and axios header
+          setToken(storedToken);
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           const res = await api.get(`/users/me`);
           setUser(res.data);
         }
@@ -98,6 +102,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userId', user.id);
       
+      // Update token state and axios header
+      setToken(accessToken);
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
       
       setUser(user);
@@ -121,12 +127,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  
   const logout = async () => {
     try {
       // Call logout endpoint if your API has one
-      const token = localStorage.getItem('token');
-      if (token) {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken) {
         await api.post('/auth/logout');
       }
     } catch (err) {
@@ -138,6 +143,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('userId');
       delete api.defaults.headers.common['Authorization'];
       setUser(null);
+      setToken(null);
     }
   };
 
@@ -183,11 +189,12 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      error, 
-      login, 
-      register, 
+      user,
+      token,
+      loading,
+      error,
+      login,
+      register,
       logout,
       forgotPassword,
       resetPassword,

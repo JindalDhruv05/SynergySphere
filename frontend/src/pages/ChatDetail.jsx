@@ -1,63 +1,56 @@
+// src/pages/ChatDetail.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
-import io from 'socket.io-client';
-import { SOCKET_URL } from '../config';
+import { useSocket } from '../context/SocketContext';
 import Button from '../components/common/Button';
 
 export default function ChatDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const { socket, isConnected, joinChat, leaveChat, sendMessage, startTyping, stopTyping } = useSocket();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const socketRef = useRef();
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     fetchChatData();
-    
-    // Set up socket connection
-    socketRef.current = io(SOCKET_URL);
-    
-    socketRef.current.on('connect', () => {
-      console.log('Socket connected');
-      socketRef.current.emit('joinChat', id);
-    });
-    
-    socketRef.current.on('newMessage', (message) => {
-      setMessages(prevMessages => [...prevMessages, message]);
-    });
-    
-    socketRef.current.on('messagesRead', ({ userId, messageIds }) => {
-      if (userId !== user.id) {
-        setMessages(prevMessages => 
-          prevMessages.map(msg => 
-            messageIds.includes(msg._id) 
-              ? { ...msg, readBy: [...msg.readBy, userId] }
-              : msg
-          )
-        );
-      }
-    });
-    
-    return () => {
-      // Clean up socket connection
-      if (socketRef.current) {
-        socketRef.current.emit('leaveChat', id);
-        socketRef.current.disconnect();
-      }
-    };
-  }, [id, user.id]);
+  }, [id]);
+  useEffect(() => {
+    if (isConnected && id && socket) {
+      // Join the chat room
+      joinChat(id);
+
+      // Set up message listeners
+      socket.on('new_message', handleNewMessage);
+      socket.on('messages_read', handleMessagesRead);
+      socket.on('user_typing', handleUserTyping);
+      socket.on('user_stopped_typing', handleUserStoppedTyping);
+      socket.on('message_error', handleMessageError);
+
+      return () => {
+        // Clean up listeners
+        socket.off('new_message');
+        socket.off('messages_read');
+        socket.off('user_typing');
+        socket.off('user_stopped_typing');
+        socket.off('message_error');
+        leaveChat(id);
+      };
+    }
+  }, [isConnected, id, socket]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     scrollToBottom();
   }, [messages]);
 
@@ -65,34 +58,15 @@ export default function ChatDetail() {
     try {
       setLoading(true);
       
-      // Fetch chat details
-      const chatRes = await api.get(`/chats/${id}`);
+      const [chatRes, messagesRes, membersRes] = await Promise.all([
+        api.get(`/chats/${id}`),
+        api.get(`/chats/${id}/messages`),
+        api.get(`/chats/${id}/members`)
+      ]);
+      
       setChat(chatRes.data);
-      
-      // Fetch messages
-      const messagesRes = await api.get(`/chats/${id}/messages`);
       setMessages(messagesRes.data);
-      
-      // Fetch members
-      const membersRes = await api.get(`/chats/${id}/members`);
       setMembers(membersRes.data);
-      
-      // Mark messages as read
-      const unreadMessages = messagesRes.data.filter(
-        msg => !msg.readBy.includes(user.id)
-      );
-      
-      if (unreadMessages.length > 0) {
-        const messageIds = unreadMessages.map(msg => msg._id);
-        await api.patch(`/chats/${id}/messages/read`, { messageIds });
-        
-        // Notify other users that messages have been read
-        socketRef.current.emit('markAsRead', {
-          chatId: id,
-          userId: user.id,
-          messageIds
-        });
-      }
     } catch (error) {
       console.error('Error fetching chat data:', error);
     } finally {
@@ -100,24 +74,111 @@ export default function ChatDetail() {
     }
   };
 
+  const handleNewMessage = (message) => {
+    setMessages(prevMessages => {
+      const exists = prevMessages.some(msg => msg._id === message._id);
+      if (exists) return prevMessages;
+      return [...prevMessages, message];
+    });
+  };
+
+  const handleMessagesRead = ({ userId, messageIds }) => {
+    if (userId !== user.id) {
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          messageIds.includes(msg._id) 
+            ? { ...msg, readBy: [...msg.readBy, userId] }
+            : msg
+        )
+      );
+    }
+  };
+
+  const handleUserTyping = ({ userId, userName, chatId }) => {
+    if (userId !== user.id && chatId === id) {
+      setTypingUsers(prev => {
+        if (!prev.find(u => u.userId === userId)) {
+          return [...prev, { userId, userName }];
+        }
+        return prev;
+      });
+    }
+  };
+
+  const handleUserStoppedTyping = ({ userId, chatId }) => {
+    if (userId !== user.id && chatId === id) {
+      setTypingUsers(prev => prev.filter(u => u.userId !== userId));
+    }
+  };
+
+  const handleMessageError = (error) => {
+    console.error('Message error:', error);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || submitting) return;
     
     try {
       setSubmitting(true);
-      const response = await api.post(`/chats/${id}/messages`, { content: newMessage });
       
-      // No need to add the message here as it will come through the socket
+      if (isConnected && socket) {
+        // Real-time messaging via socket
+        console.log('📡 Sending message via socket (real-time)');
+        sendMessage(id, newMessage);
+      } else {
+        // Fallback to HTTP API (persistent messaging)
+        console.log('📨 Sending message via HTTP API (persistent)');
+        await api.post(`/chats/${id}/messages`, { content: newMessage });
+        // Refresh messages to show the new message
+        fetchChatData();
+      }
+      
       setNewMessage('');
+      handleStopTyping();
     } catch (error) {
       console.error('Error sending message:', error);
+      // If socket fails, try HTTP API as backup
+      if (isConnected) {
+        try {
+          console.log('🔄 Socket failed, trying HTTP API backup');
+          await api.post(`/chats/${id}/messages`, { content: newMessage });
+          fetchChatData();
+        } catch (httpError) {
+          console.error('HTTP API backup also failed:', httpError);
+        }
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+      if (!isTyping && e.target.value.trim()) {
+      setIsTyping(true);
+      startTyping(id);
+    }
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      handleStopTyping();
+    }, 1000);
+  };
+  const handleStopTyping = () => {
+    if (isTyping) {
+      setIsTyping(false);
+      stopTyping(id);
+    }
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
   };
 
@@ -157,14 +218,18 @@ export default function ChatDetail() {
             <h2 className="text-lg font-medium text-gray-900">{chat?.name}</h2>
             <p className="text-sm text-gray-500">
               {chat?.type.charAt(0).toUpperCase() + chat?.type.slice(1)} chat • {members.length} members
+              {!isConnected && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  Disconnected
+                </span>
+              )}
+              {isConnected && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+              )}
             </p>
           </div>
-          <Button className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-gray-800 active:bg-gray-50">
-            <svg className="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-            Options
-          </Button>
         </div>
         
         {/* Messages */}
@@ -243,23 +308,49 @@ export default function ChatDetail() {
               );
             })
           )}
+          
+          {/* Typing indicators */}
+          {typingUsers.length > 0 && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg px-4 py-2">
+                <div className="flex items-center space-x-1">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-xs text-gray-500 ml-2">
+                    {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
         
         {/* Message input */}
         <div className="border-t border-gray-200 px-4 py-4">
-          <form onSubmit={handleSendMessage} className="flex">
-            <input
+          <form onSubmit={handleSendMessage} className="flex">            <input
               type="text"
-              className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Type your message..."
+              className={`flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                !isConnected ? 'bg-yellow-50 border-yellow-300' : ''
+              }`}
+              placeholder={isConnected ? "Type your message..." : "Type your message (will be sent when reconnected)..."}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
+              onBlur={handleStopTyping}
             />
             <Button
               type="submit"
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 ${
+                isConnected 
+                  ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500' 
+                  : 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500'
+              }`}
               disabled={!newMessage.trim() || submitting}
+              title={isConnected ? "Send message" : "Send message (persistent mode)"}
             >
               {submitting ? (
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

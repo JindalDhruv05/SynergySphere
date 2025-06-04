@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { SocketProvider } from './context/SocketContext.jsx';
 import './App.css';
+
 // Import pages
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -41,72 +43,78 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          
-          {/* Protected routes */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/projects" element={
-            <ProtectedRoute>
-              <Projects />
-            </ProtectedRoute>
-          } />
-          <Route path="/projects/new" element={<CreateProject />} />
-          <Route path="/projects/:id" element={
-            <ProtectedRoute>
-              <ProjectDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/tasks" element={
-            <ProtectedRoute>
-              <Tasks />
-            </ProtectedRoute>
-          } />
+      <SocketProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            
+            {/* Protected routes */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects" element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/new" element={
+              <ProtectedRoute>
+                <CreateProject />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/:id" element={
+              <ProtectedRoute>
+                <ProjectDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/tasks" element={
+              <ProtectedRoute>
+                <Tasks />
+              </ProtectedRoute>
+            } />
             <Route path="/tasks/new" element={
-            <ProtectedRoute>
-              <CreateTask />
-            </ProtectedRoute>
-          } />
-          <Route path="/tasks/:id" element={
-            <ProtectedRoute>
-              <TaskDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/chats" element={
-            <ProtectedRoute>
-              <Chats />
-            </ProtectedRoute>
-          } />
-          <Route path="/chats/:id" element={
-            <ProtectedRoute>
-              <ChatDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/documents" element={
-            <ProtectedRoute>
-              <Documents />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          
-          {/* 404 route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+              <ProtectedRoute>
+                <CreateTask />
+              </ProtectedRoute>
+            } />
+            <Route path="/tasks/:id" element={
+              <ProtectedRoute>
+                <TaskDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/chats" element={
+              <ProtectedRoute>
+                <Chats />
+              </ProtectedRoute>
+            } />
+            <Route path="/chats/:id" element={
+              <ProtectedRoute>
+                <ChatDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/documents" element={
+              <ProtectedRoute>
+                <Documents />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

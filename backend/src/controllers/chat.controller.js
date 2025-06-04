@@ -2,7 +2,7 @@ import Chat from '../models/chat.model.js';
 import ChatMember from '../models/chatMember.model.js';
 import Message from '../models/message.model.js';
 import User from '../models/user.model.js';
-
+import { getSocketInstance } from '../socket/socketHandlers.js';
 // Get all chats for current user
 export const getChats = async (req, res) => {
   try {
@@ -149,6 +149,29 @@ export const addChatMember = async (req, res) => {
     });
     
     await chatMember.save();
+
+     // Emit via Socket.IO
+    const io = getSocketInstance();
+    if (io) {
+      // Get user socket and join them to chat room
+      const userSocketId = connectedUsers.get(userId);
+      if (userSocketId) {
+        const userSocket = io.sockets.sockets.get(userSocketId);
+        if (userSocket) {
+          userSocket.join(`chat_${req.params.id}`);
+        }
+      }
+      
+      // Notify all chat members
+      io.to(`chat_${req.params.id}`).emit('member_joined', {
+        chatId: req.params.id,
+        userId,
+        memberInfo: await User.findById(userId).select('name email avatar')
+      });
+    }
+    
+    res.status(201).json(chatMember);
+
     
     res.status(201).json(chatMember);
   } catch (error) {
@@ -206,16 +229,18 @@ export const sendMessage = async (req, res) => {
       chatId: req.params.id,
       senderId: req.user.id,
       content,
-      readBy: [req.user.id] // Sender has read the message
+      readBy: [req.user.id]
     });
     
     await message.save();
-    
-    // Update chat's updatedAt timestamp
     await Chat.findByIdAndUpdate(req.params.id, { updatedAt: Date.now() });
-    
-    // Populate sender info for response
     await message.populate('senderId', 'name email avatar');
+    
+    // Emit via Socket.IO if available
+    const io = getSocketInstance();
+    if (io) {
+      io.to(`chat_${req.params.id}`).emit('new_message', message);
+    }
     
     res.status(201).json(message);
   } catch (error) {
