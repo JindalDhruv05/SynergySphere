@@ -1,6 +1,6 @@
 // src/pages/Chats.jsx
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
 import { format } from 'date-fns';
@@ -10,6 +10,7 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 
 export default function Chats() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
   const [chats, setChats] = useState([]);
@@ -115,9 +116,13 @@ export default function Chats() {
         name: chatName || (chatType === 'personal' ? 'New Chat' : ''),
         memberIds: selectedMembers
       };
+      console.log('Creating chat with payload:', payload);
       
       const response = await api.post('/chats', payload);
+      console.log('Chat created:', response.data);
       setChats([response.data, ...chats]);
+      // Navigate into the new chat detail
+      navigate(`/chats/${response.data._id}`);
       
       // Reset form
       setChatType('personal');
@@ -126,6 +131,7 @@ export default function Chats() {
       setIsCreateChatModalOpen(false);
     } catch (error) {
       console.error('Error creating chat:', error);
+      alert('Failed to create chat: ' + error.message);
     } finally {
       setSubmitting(false);
     }
@@ -267,7 +273,71 @@ export default function Chats() {
 
       {/* Your existing Create Chat Modal remains the same */}
       <Modal isOpen={isCreateChatModalOpen} onClose={() => setIsCreateChatModalOpen(false)} title="Create New Chat" maxWidth="lg">
-        {/* Your existing modal content */}
+        <form onSubmit={handleCreateChat} className="space-y-4">
+          <div>
+            <label className="mr-4">
+              <input
+                type="radio"
+                value="personal"
+                checked={chatType === 'personal'}
+                onChange={() => setChatType('personal')}
+                className="mr-2"
+              />
+              Personal Chat
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="group"
+                checked={chatType === 'group'}
+                onChange={() => setChatType('group')}
+                className="mr-2"
+              />
+              Group Chat
+            </label>
+          </div>
+
+          {chatType === 'group' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Chat Name</label>
+              <input
+                type="text"
+                value={chatName}
+                onChange={(e) => setChatName(e.target.value)}
+                required
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Members</label>
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-gray-200 p-2 rounded">
+              {users.map(u => (
+                <label key={u._id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    value={u._id}
+                    checked={selectedMembers.includes(u._id)}
+                    onChange={() => toggleMemberSelection(u._id)}
+                    className="mr-2"
+                  />
+                  <span>{u.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <Button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              disabled={submitting || (chatType === 'personal' && selectedMembers.length === 0)}
+            >
+              {submitting ? 'Creating...' : 'Create Chat'}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </DashboardLayout>
   );
