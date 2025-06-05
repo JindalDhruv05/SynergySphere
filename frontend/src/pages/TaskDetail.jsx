@@ -7,6 +7,7 @@ import AddTaskMemberModal from '../components/task/AddTaskMemberModal';
 import ConfirmDoneModal from '../components/task/ConfirmDoneModal';
 import CreateSubtaskModal from '../components/task/CreateSubtaskModal';
 import TaskExpenses from '../components/task/TaskExpenses';
+import TaskBudget from '../components/task/TaskBudget';
 import { format } from 'date-fns';
 
 export default function TaskDetail() {
@@ -678,10 +679,20 @@ export default function TaskDetail() {
                 ))}
               </ul>
             )}          </div>
+        );        case 'expenses':
+        return (
+          <div className="space-y-6">
+            <TaskBudget 
+              taskId={id} 
+              task={task} 
+              onUpdateTask={setTask} 
+            />
+            <TaskExpenses 
+              taskId={id} 
+              projectId={task?.projectId?._id} 
+            />
+          </div>
         );
-        
-      case 'expenses':
-        return <TaskExpenses taskId={id} />;
         
         case 'chat':
         if (chatLoading) {

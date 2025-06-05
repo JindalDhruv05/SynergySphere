@@ -13,7 +13,6 @@ export default function TaskExpenses({ taskId, projectId }) {
     category: 'Other',
     description: ''
   });
-
   const expenseCategories = [
     'Software/Tools',
     'Travel',

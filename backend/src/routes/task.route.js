@@ -13,7 +13,9 @@ import {
   removeTaskMember,
   getTaskComments,
   addTaskComment,
-  deleteTaskComment
+  deleteTaskComment,
+  updateTaskBudget,
+  getTaskBudgetOverview
 } from '../controllers/task.controller.js';
 import { verifyToken, isProjectMember, isTaskMember, isProjectAdmin } from '../middleware/auth.middleware.js';
 
@@ -39,5 +41,9 @@ router.delete('/:id/members/:userId', verifyToken, isProjectAdmin, removeTaskMem
 router.get('/:id/comments', verifyToken, isTaskMember, getTaskComments);
 router.post('/:id/comments', verifyToken, isTaskMember, addTaskComment);
 router.delete('/:id/comments/:commentId', verifyToken, isTaskMember, deleteTaskComment);
+
+// Budget
+router.put('/:id/budget', verifyToken, isTaskMember, updateTaskBudget);
+router.get('/:id/budget', verifyToken, isTaskMember, getTaskBudgetOverview);
 
 export default router;

@@ -429,3 +429,171 @@ export const deleteTaskComment = async (req, res) => {
     res.status(500).json({ message: 'Error deleting comment', error: error.message });
   }
 };
+
+// Update task budget
+export const updateTaskBudget = async (req, res) => {
+  try {
+    const { totalBudget, currency, budgetAlerts } = req.body;
+    
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+      // Permission check is already handled by isTaskMember middleware
+    
+    // Initialize budget object if it doesn't exist
+    if (!task.budget) {
+      task.budget = {
+        totalBudget: 0,
+        currency: 'USD',
+        budgetAlerts: {
+          enabled: true,
+          thresholds: [
+            { percentage: 80, notified: false }
+          ]
+        }
+      };
+    }
+    
+    // Update budget fields
+    if (totalBudget !== undefined) task.budget.totalBudget = totalBudget;
+    if (currency) task.budget.currency = currency;
+    if (budgetAlerts) {
+      task.budget.budgetAlerts = {
+        ...task.budget.budgetAlerts,
+        ...budgetAlerts
+      };
+    }
+    
+    await task.save();
+    
+    // Check budget thresholds and create notifications if needed
+    await checkTaskBudgetThresholds(task);
+    
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating task budget', error: error.message });
+  }
+};
+
+// Get task budget overview
+export const getTaskBudgetOverview = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    // Initialize budget object if it doesn't exist
+    if (!task.budget) {
+      task.budget = {
+        totalBudget: 0,
+        currency: 'USD',
+        budgetAlerts: {
+          enabled: true,
+          thresholds: [
+            { percentage: 80, notified: false }
+          ]
+        }
+      };
+    }
+    
+    // Get expense summary for this task
+    const Expense = await import('../models/expense.model.js');
+    const expenses = await Expense.default.find({ taskId });
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const approvedExpenses = expenses
+      .filter(exp => exp.status === 'Approved' || exp.status === 'Paid')
+      .reduce((sum, exp) => sum + exp.amount, 0);
+    
+    // Calculate budget utilization
+    const budgetUtilization = task.budget.totalBudget > 0 
+      ? (approvedExpenses / task.budget.totalBudget) * 100 
+      : 0;
+    
+    // Expense breakdown by category
+    const categoryBreakdown = expenses.reduce((acc, expense) => {
+      if (!acc[expense.category]) {
+        acc[expense.category] = { count: 0, amount: 0 };
+      }
+      acc[expense.category].count++;
+      acc[expense.category].amount += expense.amount;
+      return acc;
+    }, {});
+    
+    res.status(200).json({
+      budget: task.budget,
+      totalExpenses,
+      approvedExpenses,
+      pendingExpenses: totalExpenses - approvedExpenses,
+      remainingBudget: Math.max(0, task.budget.totalBudget - approvedExpenses),
+      budgetUtilization: Math.round(budgetUtilization * 100) / 100,
+      categoryBreakdown,
+      expenseCount: expenses.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task budget overview', error: error.message });
+  }
+};
+
+// Helper function to check task budget thresholds and create notifications
+const checkTaskBudgetThresholds = async (task) => {
+  try {
+    if (!task.budget.budgetAlerts?.enabled || !task.budget.totalBudget) {
+      return;
+    }
+
+    const totalExpenses = await task.getTotalExpenses();
+    const utilization = await task.getBudgetUtilization();
+    const thresholds = task.budget.budgetAlerts.thresholds || [];
+
+    // Get task members who should receive notifications
+    const taskMembers = await TaskMember.find({
+      taskId: task._id
+    }).populate('userId', '_id');
+
+    const recipientIds = [...new Set([
+      task.createdBy.toString(),
+      ...taskMembers.map(tm => tm.userId._id.toString())
+    ])];
+
+    // Check each threshold
+    for (const threshold of thresholds) {
+      if (utilization >= threshold.percentage) {
+        // Check if notification already exists for this threshold
+        const Notification = await import('../models/notification.model.js');
+        const existingNotification = await Notification.default.findOne({
+          recipientId: { $in: recipientIds },
+          type: 'budget_threshold',
+          'metadata.taskId': task._id,
+          'metadata.threshold': threshold.percentage,
+          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Within last 24 hours
+        });
+
+        if (!existingNotification) {
+          // Create notifications for all recipients
+          const notifications = recipientIds.map(recipientId => ({
+            recipientId,
+            type: 'budget_threshold',
+            title: `Task Budget Alert: ${task.title}`,
+            message: `Task "${task.title}" has reached ${utilization.toFixed(1)}% of its budget (${task.budget.currency} ${totalExpenses.toLocaleString()} / ${task.budget.currency} ${task.budget.totalBudget.toLocaleString()})`,
+            metadata: {
+              taskId: task._id,
+              projectId: task.projectId,
+              threshold: threshold.percentage,
+              utilization,
+              totalExpenses,
+              totalBudget: task.budget.totalBudget
+            }
+          }));
+
+          await Notification.default.insertMany(notifications);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking task budget thresholds:', error);
+  }
+};

@@ -19,8 +19,18 @@ const TaskSchema = new mongoose.Schema({
     type: String, 
     enum: ['Low', 'Medium', 'High'], 
     default: 'Medium' 
-  },
-  googleDriveFolderId: { type: String }
+  },  googleDriveFolderId: { type: String },
+  budget: {
+    totalBudget: { type: Number, default: 0 },
+    currency: { type: String, default: 'USD' },
+    budgetAlerts: {
+      enabled: { type: Boolean, default: true },
+      thresholds: [{
+        percentage: { type: Number, default: 80 },
+        notified: { type: Boolean, default: false }
+      }]
+    }
+  }
 }, { timestamps: true });
 
 // Index for faster subtask queries
@@ -40,6 +50,30 @@ TaskSchema.methods.getMembers = function() {
 TaskSchema.methods.isOverdue = function() {
   if (!this.dueDate) return false;
   return new Date() > this.dueDate;
+};
+
+// Method to calculate total expenses for this task
+TaskSchema.methods.getTotalExpenses = async function() {
+  const Expense = mongoose.model('Expense');
+  const expenses = await Expense.find({ taskId: this._id });
+  return expenses.reduce((total, expense) => total + expense.amount, 0);
+};
+
+// Method to calculate budget utilization percentage
+TaskSchema.methods.getBudgetUtilization = async function() {
+  if (!this.budget.totalBudget || this.budget.totalBudget === 0) return 0;
+  const totalExpenses = await this.getTotalExpenses();
+  return (totalExpenses / this.budget.totalBudget) * 100;
+};
+
+// Method to check if budget threshold is exceeded
+TaskSchema.methods.checkBudgetThreshold = async function() {
+  const utilization = await this.getBudgetUtilization();
+  const thresholds = this.budget.budgetAlerts.thresholds;
+  
+  return thresholds.some(threshold => 
+    utilization >= threshold.percentage && !threshold.notified
+  );
 };
 
 export default mongoose.model("Task", TaskSchema);

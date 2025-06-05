@@ -12,6 +12,7 @@ const NotificationSchema = new mongoose.Schema({
       'project_invitation',
       'document_shared',
       'budget_threshold',
+      'task_budget_threshold',
       'chat_ping'    
 ], 
     required: true 
