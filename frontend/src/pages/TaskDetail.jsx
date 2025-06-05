@@ -4,6 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
 import ChatDetail from './ChatDetail';
 import AddTaskMemberModal from '../components/task/AddTaskMemberModal';
+import ConfirmDoneModal from '../components/task/ConfirmDoneModal';
 import { format } from 'date-fns';
 
 export default function TaskDetail() {
@@ -18,10 +19,13 @@ export default function TaskDetail() {
   const [activeTab, setActiveTab] = useState('details');
   const [newComment, setNewComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTask, setEditedTask] = useState({});  const [submitting, setSubmitting] = useState(false);
-  const [taskChat, setTaskChat] = useState(null);
+  const [editedTask, setEditedTask] = useState({});  const [submitting, setSubmitting] = useState(false);  const [taskChat, setTaskChat] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [confirmDoneModal, setConfirmDoneModal] = useState({ 
+    isOpen: false, 
+    newStatus: null 
+  });
 
   useEffect(() => {
     fetchTaskData();
@@ -81,24 +85,111 @@ export default function TaskDetail() {
       setLoading(false);
     }
   };
-
   const handleStatusChange = async (newStatus) => {
+    // If trying to change to Done status and current status is not Done, show confirmation
+    if (newStatus === 'Done' && task?.status !== 'Done') {
+      setConfirmDoneModal({
+        isOpen: true,
+        newStatus
+      });
+      return;
+    }
+
+    // Check if task is Done and confirmed, prevent changes
+    if (task?.status === 'Done' && task?.statusConfirmed && newStatus !== 'Done') {
+      alert('This task has been confirmed as Done and cannot be changed.');
+      return;
+    }
+
     try {
       const response = await api.put(`/tasks/${id}`, { ...task, status: newStatus });
       setTask(response.data);
     } catch (error) {
       console.error('Error updating task status:', error);
+      if (error.response?.data?.statusLocked) {
+        alert('This task has been confirmed as Done and cannot be changed.');
+      } else if (error.response?.data?.requiresConfirmation) {
+        setConfirmDoneModal({
+          isOpen: true,
+          newStatus
+        });
+      }
     }
   };
+  const handleConfirmDone = async () => {
+    const { newStatus } = confirmDoneModal;
+    
+    try {
+      let updateData;
+      
+      // If we're in editing mode, use the edited task data
+      if (isEditing) {
+        updateData = { 
+          ...editedTask, 
+          status: newStatus, 
+          confirmDone: true 
+        };
+      } else {
+        updateData = { 
+          ...task, 
+          status: newStatus, 
+          confirmDone: true 
+        };
+      }
+      
+      const response = await api.put(`/tasks/${id}`, updateData);
+      setTask(response.data);
+      
+      // If we were editing, exit edit mode
+      if (isEditing) {
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error confirming task completion:', error);
+    }
+    
+    setConfirmDoneModal({ isOpen: false, newStatus: null });
+  };
 
+  const handleCancelConfirm = () => {
+    setConfirmDoneModal({ isOpen: false, newStatus: null });
+  };
   const handleTaskUpdate = async () => {
     try {
       setSubmitting(true);
+      
+      // Check if status is changing to Done and requires confirmation
+      if (editedTask.status === 'Done' && task?.status !== 'Done') {
+        setConfirmDoneModal({
+          isOpen: true,
+          newStatus: 'Done'
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if trying to change from confirmed Done status
+      if (task?.status === 'Done' && task?.statusConfirmed && editedTask.status !== 'Done') {
+        alert('This task has been confirmed as Done and cannot be changed.');
+        setEditedTask({ ...editedTask, status: 'Done' }); // Reset to Done
+        setSubmitting(false);
+        return;
+      }
+      
       const response = await api.put(`/tasks/${id}`, editedTask);
       setTask(response.data);
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating task:', error);
+      if (error.response?.data?.statusLocked) {
+        alert('This task has been confirmed as Done and cannot be changed.');
+        setEditedTask({ ...editedTask, status: 'Done' }); // Reset to Done
+      } else if (error.response?.data?.requiresConfirmation) {
+        setConfirmDoneModal({
+          isOpen: true,
+          newStatus: editedTask.status
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -187,19 +278,24 @@ export default function TaskDetail() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                  <div>
                     <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
                     <select
                       id="status"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${task?.status === 'Done' && task?.statusConfirmed ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                       value={editedTask.status || ''}
                       onChange={(e) => setEditedTask({ ...editedTask, status: e.target.value })}
+                      disabled={task?.status === 'Done' && task?.statusConfirmed}
                     >
                       <option value="To-Do">To-Do</option>
                       <option value="In Progress">In Progress</option>
                       <option value="Done">Done</option>
                     </select>
+                    {task?.status === 'Done' && task?.statusConfirmed && (
+                      <div className="mt-1 text-xs text-green-600">
+                        Status locked - Task confirmed as completed
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -275,19 +371,27 @@ export default function TaskDetail() {
                   </div>
                 </div>
                 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">                  <div>
                     <h3 className="text-sm font-medium text-gray-500">Status</h3>
                     <div className="mt-2">
                       <select
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${task?.status === 'Done' && task?.statusConfirmed ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         value={task?.status || ''}
                         onChange={(e) => handleStatusChange(e.target.value)}
+                        disabled={task?.status === 'Done' && task?.statusConfirmed}
                       >
                         <option value="To-Do">To-Do</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Done">Done</option>
                       </select>
+                      {task?.status === 'Done' && task?.statusConfirmed && (
+                        <div className="mt-1 flex items-center text-xs text-green-600">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Status locked - Task confirmed as completed
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -709,14 +813,21 @@ export default function TaskDetail() {
           {renderTabContent()}
         </div>
       </div>
-      
-      {/* Add Task Member Modal */}
+        {/* Add Task Member Modal */}
       <AddTaskMemberModal 
         isOpen={isAddMemberModalOpen}
         onClose={() => setIsAddMemberModalOpen(false)}
         taskId={id}
         onMemberAdded={handleMemberAdded}
         existingMembers={members}
+      />
+      
+      {/* Confirm Done Modal */}
+      <ConfirmDoneModal
+        isOpen={confirmDoneModal.isOpen}
+        onClose={handleCancelConfirm}
+        onConfirm={handleConfirmDone}
+        taskTitle={task?.title || ''}
       />
     </DashboardLayout>
   );

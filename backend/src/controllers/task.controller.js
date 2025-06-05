@@ -107,17 +107,46 @@ export const createTask = async (req, res) => {
 // Update task
 export const updateTask = async (req, res) => {
   try {
-    const { title, description, status, dueDate, priority } = req.body;
+    const { title, description, status, dueDate, priority, confirmDone } = req.body;
+    
+    const currentTask = await Task.findById(req.params.id);
+    if (!currentTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // If trying to change to Done status without confirmation, return error
+    if (status === 'Done' && !confirmDone && currentTask.status !== 'Done') {
+      return res.status(400).json({ 
+        message: 'Confirmation required to mark task as Done',
+        requiresConfirmation: true 
+      });
+    }
+
+    // If trying to change from Done status after it was confirmed, prevent it
+    if (currentTask.status === 'Done' && currentTask.statusConfirmed && status !== 'Done') {
+      return res.status(400).json({ 
+        message: 'Cannot change status from Done once it has been confirmed',
+        statusLocked: true 
+      });
+    }
+
+    const updateData = { title, description, status, dueDate, priority };
+    
+    // If confirming Done status, set statusConfirmed to true
+    if (status === 'Done' && confirmDone) {
+      updateData.statusConfirmed = true;
+    }
+    
+    // If changing from Done to another status (before confirmation), reset statusConfirmed
+    if (currentTask.status === 'Done' && status !== 'Done' && !currentTask.statusConfirmed) {
+      updateData.statusConfirmed = false;
+    }
     
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
-      { title, description, status, dueDate, priority },
+      updateData,
       { new: true }
     );
-    
-    if (!updatedTask) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
     
     res.status(200).json(updatedTask);
   } catch (error) {
