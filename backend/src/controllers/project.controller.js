@@ -1,6 +1,7 @@
 import Project from '../models/project.model.js';
 import ProjectMember from '../models/projectMember.model.js';
 import User from '../models/user.model.js'; 
+import Notification from '../models/notification.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 import ProjectChat from '../models/projectChat.model.js';
 import { createNotification } from './notification.controller.js';
@@ -245,5 +246,106 @@ export const removeProjectMember = async (req, res) => {
     res.status(200).json({ message: 'Project member removed successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error removing project member', error: error.message });
+  }
+};
+
+// Update project budget
+export const updateProjectBudget = async (req, res) => {
+  try {
+    const { totalBudget, currency, budgetAlerts } = req.body;
+    
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    // Check if user has permission to update budget (admin or creator)
+    const isAdmin = await ProjectMember.exists({
+      projectId: req.params.id,
+      userId: req.user.id,
+      role: 'admin'
+    });
+    
+    if (!isAdmin && project.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied. Admin permission required.' });
+    }
+    
+    // Update budget fields
+    if (totalBudget !== undefined) project.budget.totalBudget = totalBudget;
+    if (currency) project.budget.currency = currency;
+    if (budgetAlerts) {
+      project.budget.budgetAlerts = {
+        ...project.budget.budgetAlerts,
+        ...budgetAlerts
+      };
+    }
+    
+    await project.save();
+    
+    // Check budget thresholds and create notifications if needed
+    await checkBudgetThresholds(project);
+    
+    res.status(200).json(project);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating project budget', error: error.message });
+  }
+};
+
+// Helper function to check budget thresholds and create notifications
+const checkBudgetThresholds = async (project) => {
+  try {
+    if (!project.budget.budgetAlerts?.enabled || !project.budget.totalBudget) {
+      return;
+    }
+
+    const totalExpenses = await project.getTotalExpenses();
+    const utilization = await project.getBudgetUtilization();
+    const thresholds = project.budget.budgetAlerts.thresholds || [];
+
+    // Get project members who should receive notifications (admin and creator)
+    const projectMembers = await ProjectMember.find({
+      projectId: project._id,
+      role: { $in: ['admin'] }
+    }).populate('userId', '_id');
+
+    const recipientIds = [...new Set([
+      project.createdBy.toString(),
+      ...projectMembers.map(pm => pm.userId._id.toString())
+    ])];
+
+    // Check each threshold
+    for (const threshold of thresholds) {
+      if (utilization >= threshold) {
+        // Check if notification already exists for this threshold
+        const existingNotification = await Notification.findOne({
+          recipientId: { $in: recipientIds },
+          type: 'budget_threshold',
+          'metadata.projectId': project._id,
+          'metadata.threshold': threshold,
+          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Within last 24 hours
+        });
+
+        if (!existingNotification) {
+          // Create notifications for all recipients
+          const notifications = recipientIds.map(recipientId => ({
+            recipientId,
+            type: 'budget_threshold',
+            title: `Budget Alert: ${project.name}`,
+            message: `Project "${project.name}" has reached ${utilization.toFixed(1)}% of its budget (${project.budget.currency} ${totalExpenses.toLocaleString()} / ${project.budget.currency} ${project.budget.totalBudget.toLocaleString()})`,
+            metadata: {
+              projectId: project._id,
+              threshold,
+              utilization,
+              totalExpenses,
+              totalBudget: project.budget.totalBudget
+            }
+          }));
+
+          await Notification.insertMany(notifications);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking budget thresholds:', error);
   }
 };
