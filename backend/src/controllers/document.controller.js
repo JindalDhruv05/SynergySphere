@@ -1,12 +1,16 @@
 import DriveDocument from '../models/driveDocument.model.js';
 import DrivePermission from '../models/drivePermission.model.js';
-import { uploadFileToDrive, updateFileInDrive, deleteFileFromDrive } from '../services/googleDrive.js';
+import User from '../models/user.model.js';
+import cloudinary from '../services/cloudinary.js';
+import streamifier from 'streamifier';
+import { generateCloudinaryUrls } from '../utils/cloudinaryUrl.js';
 
 // Get all documents for current user
 export const getDocuments = async (req, res) => {
   try {
     // Find all documents uploaded by user
-    const ownDocuments = await DriveDocument.find({ uploadedBy: req.user.id });
+    const ownDocuments = await DriveDocument.find({ uploadedBy: req.user.id })
+      .populate('uploadedBy', 'name email avatar');
     
     // Find all documents shared with user
     const permissions = await DrivePermission.find({ userId: req.user.id });
@@ -15,7 +19,7 @@ export const getDocuments = async (req, res) => {
     const sharedDocuments = await DriveDocument.find({
       _id: { $in: sharedDocumentIds },
       uploadedBy: { $ne: req.user.id } // Exclude own documents
-    });
+    }).populate('uploadedBy', 'name email avatar');
     
     const documents = [...ownDocuments, ...sharedDocuments];
     
@@ -41,50 +45,68 @@ export const getDocumentById = async (req, res) => {
   }
 };
 
-// Upload document
+// Upload document (Cloudinary)
 export const uploadDocument = async (req, res) => {
   try {
-    const { name, mimeType, size, folderId } = req.body;
-    const file = req.file; // Assuming you're using multer or similar
-    
+    const file = req.file;
     if (!file) {
       return res.status(400).json({ message: 'No file uploaded' });
-    }
-    
-    // Upload to Google Drive
-    const driveFile = await uploadFileToDrive(
-      file,
-      name,
-      mimeType,
-      folderId,
-      req.user.googleDriveAccessToken,
-      req.user.googleDriveRefreshToken
-    );
-    
-    const document = new DriveDocument({
-      name: driveFile.name,
-      mimeType: driveFile.mimeType,
-      size: driveFile.size,
-      googleDriveFileId: driveFile.id,
-      googleDriveWebViewLink: driveFile.webViewLink,
-      googleDriveWebContentLink: driveFile.webContentLink,
-      uploadedBy: req.user.id
+    }    // Determine resource type based on file type
+    const getResourceType = (mimetype) => {
+      if (mimetype.startsWith('image/')) {
+        return 'image';
+      } else if (mimetype.startsWith('video/')) {
+        return 'video';
+      } else {
+        // For documents (PDF, DOC, TXT, etc.)
+        return 'raw';
+      }
+    };    // Upload to Cloudinary using upload_stream
+    const uploadPromise = new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: getResourceType(file.mimetype),
+          folder: 'synergy_documents',
+          public_id: `${Date.now()}_${file.originalname.split('.')[0]}`,
+          upload_preset: 'ml_default', // Use your upload preset
+          // For raw files, preserve original filename extension
+          ...(getResourceType(file.mimetype) === 'raw' && {
+            format: file.originalname.split('.').pop()
+          })
+        },
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+      
+      // Use streamifier to convert buffer to stream
+      streamifier.createReadStream(file.buffer).pipe(stream);
+    });const result = await uploadPromise;
+
+    // Save document metadata in DB
+    const doc = await DriveDocument.create({
+      name: req.body.name || file.originalname,
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+      resourceType: getResourceType(file.mimetype),
+      size: file.size,
+      mimeType: file.mimetype,
+      uploadedBy: req.user.id,
+      uploadedAt: new Date(),
     });
-    
-    await document.save();
-    
-    // Add owner permission
-    const permission = new DrivePermission({
-      documentId: document._id,
-      userId: req.user.id,
-      role: 'owner',
-      type: 'user'
-    });
-    
-    await permission.save();
-    
-    res.status(201).json(document);
+
+    // Populate the uploadedBy field for response
+    await doc.populate('uploadedBy', 'name email avatar');
+
+    res.status(201).json(doc);
   } catch (error) {
+    console.error('Upload error:', error);
     res.status(500).json({ message: 'Error uploading document', error: error.message });
   }
 };
@@ -99,17 +121,18 @@ export const updateDocument = async (req, res) => {
       return res.status(404).json({ message: 'Document not found' });
     }
     
-    // Update in Google Drive
-    await updateFileInDrive(
-      document.googleDriveFileId,
-      { name },
-      req.user.googleDriveAccessToken,
-      req.user.googleDriveRefreshToken
-    );
+    // Check if user owns the document or has permission
+    if (document.uploadedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this document' });
+    }
     
+    // Update document name in database
     document.name = name;
     document.lastModifiedAt = Date.now();
     await document.save();
+    
+    // Populate uploadedBy field for response
+    await document.populate('uploadedBy', 'name email avatar');
     
     res.status(200).json(document);
   } catch (error) {
@@ -125,12 +148,20 @@ export const deleteDocument = async (req, res) => {
       return res.status(404).json({ message: 'Document not found' });
     }
     
-    // Delete from Google Drive
-    await deleteFileFromDrive(
-      document.googleDriveFileId,
-      req.user.googleDriveAccessToken,
-      req.user.googleDriveRefreshToken
-    );
+    // Check if user owns the document or has permission
+    if (document.uploadedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to delete this document' });
+    }
+    
+    // Delete from Cloudinary if publicId exists
+    if (document.publicId) {
+      try {
+        await cloudinary.uploader.destroy(document.publicId);
+      } catch (cloudinaryError) {
+        console.error('Error deleting from Cloudinary:', cloudinaryError);
+        // Continue with database deletion even if Cloudinary deletion fails
+      }
+    }
     
     // Delete document and permissions
     await DriveDocument.findByIdAndDelete(req.params.id);
@@ -226,5 +257,22 @@ export const removeDocumentPermission = async (req, res) => {
     res.status(200).json({ message: 'Permission removed successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error removing document permission', error: error.message });
+  }
+};
+
+// Get document URLs for view and download
+export const getDocumentUrls = async (req, res) => {
+  try {
+    const document = await DriveDocument.findById(req.params.id);
+    
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    
+    const urls = generateCloudinaryUrls(document);
+    
+    res.status(200).json(urls);
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating document URLs', error: error.message });
   }
 };

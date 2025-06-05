@@ -8,15 +8,19 @@ import {
   getDocumentPermissions,
   addDocumentPermission,
   updateDocumentPermission,
-  removeDocumentPermission
+  removeDocumentPermission,
+  getDocumentUrls
 } from '../controllers/document.controller.js';
 import { verifyToken, hasDocumentAccess, isDocumentOwner } from '../middleware/auth.middleware.js';
+import multer from 'multer';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', verifyToken, getDocuments);
 router.get('/:id', verifyToken, hasDocumentAccess, getDocumentById);
-router.post('/', verifyToken, uploadDocument);
+router.get('/:id/urls', verifyToken, hasDocumentAccess, getDocumentUrls);
+router.post('/', verifyToken, upload.single('file'), uploadDocument);
 router.put('/:id', verifyToken, isDocumentOwner, updateDocument);
 router.delete('/:id', verifyToken, isDocumentOwner, deleteDocument);
 

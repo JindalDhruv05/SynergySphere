@@ -8,6 +8,7 @@ import ConfirmDoneModal from '../components/task/ConfirmDoneModal';
 import CreateSubtaskModal from '../components/task/CreateSubtaskModal';
 import TaskExpenses from '../components/task/TaskExpenses';
 import TaskBudget from '../components/task/TaskBudget';
+import TaskDocuments from '../components/task/TaskDocuments';
 import { format } from 'date-fns';
 
 // Helper function to safely format dates
@@ -25,12 +26,10 @@ const safeFormatDate = (dateString, formatStr = 'MMM d, yyyy h:mm a') => {
 
 export default function TaskDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [task, setTask] = useState(null);
+  const navigate = useNavigate();  const [task, setTask] = useState(null);
   const [subtasks, setSubtasks] = useState([]);
   const [comments, setComments] = useState([]);
   const [members, setMembers] = useState([]);
-  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
   const [newComment, setNewComment] = useState('');
@@ -87,14 +86,9 @@ export default function TaskDetail() {
       // Fetch comments
       const commentsRes = await api.get(`/tasks/${id}/comments`);
       setComments(commentsRes.data);
-      
-      // Fetch members
+        // Fetch members
       const membersRes = await api.get(`/tasks/${id}/members`);
       setMembers(membersRes.data);
-      
-      // Fetch documents
-      const documentsRes = await api.get(`/task-documents/task/${id}/documents`);
-      setDocuments(documentsRes.data);
     } catch (error) {
       console.error('Error fetching task data:', error);
       if (error.response?.status === 404) {
@@ -633,65 +627,8 @@ export default function TaskDetail() {
             )}
           </div>
         );
-      
-      case 'documents':
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Documents</h2>
-              <button
-                type='button'
-                className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                Upload Document
-              </button>
-            </div>
-            {documents.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No documents attached</p>
-            ) : (
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {documents.map((document) => (
-                  <li key={document._id} className="col-span-1 bg-white rounded-lg shadow divide-y divide-gray-200">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 truncate">
-                          <div className="flex items-center space-x-3">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">{document.name}</h3>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500 truncate">
-                            {format(new Date(document.uploadedAt), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="-mt-px flex divide-x divide-gray-200">
-                        <div className="w-0 flex-1 flex">
-                          <a
-                            href={document.googleDriveWebViewLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative -mr-px w-0 flex-1 inline-flex items-center justify-center py-4 text-sm text-gray-700 font-medium border border-transparent rounded-bl-lg hover:text-gray-500"
-                          >
-                            <span>View</span>
-                          </a>
-                        </div>
-                        <div className="-ml-px w-0 flex-1 flex">
-                          <a
-                            href={document.googleDriveWebContentLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative w-0 flex-1 inline-flex items-center justify-center py-4 text-sm text-gray-700 font-medium border border-transparent rounded-br-lg hover:text-gray-500"
-                          >
-                            <span>Download</span>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}          </div>
-        );        case 'expenses':
+        case 'documents':
+        return <TaskDocuments taskId={id} />;case 'expenses':
         return (
           <div className="space-y-6">
             <TaskBudget 

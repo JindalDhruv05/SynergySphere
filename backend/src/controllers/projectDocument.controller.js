@@ -8,13 +8,18 @@ export const getProjectDocuments = async (req, res) => {
     const projectDocuments = await ProjectDocument.find({ projectId: req.params.projectId })
       .populate({
         path: 'documentId',
+        model: 'DriveDocument', // Explicitly specify model
         populate: {
           path: 'uploadedBy',
+          model: 'User', // Explicitly specify model
           select: 'name email avatar'
         }
       });
     
-    const documents = projectDocuments.map(pd => pd.documentId);
+    // Filter out any null documentId objects that might occur if a ProjectDocument record exists with a missing documentId
+    const documents = projectDocuments
+      .filter(pd => pd.documentId) 
+      .map(pd => pd.documentId);
     
     res.status(200).json(documents);
   } catch (error) {

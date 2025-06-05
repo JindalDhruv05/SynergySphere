@@ -71,6 +71,39 @@ export default function Documents() {
       setUploading(false);
     }
   };
+  const handleViewDocument = (doc) => {
+    // For PDFs and documents, open in new tab
+    if (doc.resourceType === 'raw' || doc.mimeType === 'application/pdf') {
+      window.open(doc.url, '_blank');
+    } else {
+      // For images and videos, open directly
+      window.open(doc.url, '_blank');
+    }
+  };
+  const handleDownloadDocument = async (doc) => {
+    try {
+      // Get download URL from backend
+      const response = await api.get(`/documents/${doc._id}/urls`);
+      const { downloadUrl } = response.data;
+      
+      // Create temporary link to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl || doc.url;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      // Fallback to direct URL
+      const link = document.createElement('a');
+      link.href = doc.url;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   const handleDeleteDocument = async (documentId) => {
     try {
@@ -184,24 +217,19 @@ export default function Documents() {
                       <span>{document.uploadedBy?.name || 'Unknown'}</span>
                     </div>
                   </div>
-                </div>
-                <div className="flex space-x-2">
-                  <a
-                    href={document.googleDriveWebViewLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                </div>                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleViewDocument(document)}
                     className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500"
                   >
                     View
-                  </a>
-                  <a
-                    href={document.googleDriveWebContentLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  </button>
+                  <button
+                    onClick={() => handleDownloadDocument(document)}
                     className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500"
                   >
                     Download
-                  </a>
+                  </button>
                   <button
                     type='button'
                     onClick={() => handleDeleteDocument(document._id)}
