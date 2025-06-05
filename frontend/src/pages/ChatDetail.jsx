@@ -8,8 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import Button from '../components/common/Button';
 
-export default function ChatDetail() {
-  const { id } = useParams();
+export default function ChatDetail({ chatId: chatIdProp, isEmbedded = false }) {
+  const { id: idFromParams } = useParams();
+  const id = chatIdProp || idFromParams; // Use prop if available, else from URL params
   const { user } = useAuth();
   const { socket, isConnected, joinChat, leaveChat, sendMessage, startTyping, stopTyping } = useSocket();
   const [chat, setChat] = useState(null);
@@ -193,7 +194,7 @@ export default function ChatDetail() {
     return format(messageDate, 'MMM d, h:mm a');
   };
 
-  if (loading) {
+  if (loading && !isEmbedded) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
@@ -201,17 +202,25 @@ export default function ChatDetail() {
         </div>
       </DashboardLayout>
     );
+  } else if (loading && isEmbedded) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
-  return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <Link to="/chats" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-          &larr; Back to Chats
-        </Link>
-      </div>
+  const chatInterface = (
+    <>
+      {!isEmbedded && (
+        <div className="mb-6">
+          <Link to="/chats" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+            &larr; Back to Chats
+          </Link>
+        </div>
+      )}
       
-      <div className="bg-white shadow sm:rounded-lg flex flex-col h-[calc(100vh-200px)]">
+      <div className={`bg-white shadow sm:rounded-lg flex flex-col ${isEmbedded ? 'h-full' : 'h-[calc(100vh-200px)]'}`}>
         {/* Chat header */}
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
           <div>
@@ -366,6 +375,16 @@ export default function ChatDetail() {
           </form>
         </div>
       </div>
+    </>
+  );
+
+  if (isEmbedded) {
+    return chatInterface;
+  }
+
+  return (
+    <DashboardLayout>
+      {chatInterface}
     </DashboardLayout>
   );
 }

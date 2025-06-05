@@ -5,16 +5,31 @@ import Project from '../models/project.model.js';
 // Get project chat
 export const getProjectChat = async (req, res) => {
   try {
-    const projectChat = await ProjectChat.findOne({ projectId: req.params.projectId })
-      .populate('chatId');
+    let projectChat = await ProjectChat.findOne({ projectId: req.params.projectId }).populate('chatId');
     
+    // If no chat exists for this project, create one
     if (!projectChat) {
-      return res.status(404).json({ message: 'Project chat not found' });
-    }
-    // Dynamically set chat name to project name
-    const project = await Project.findById(req.params.projectId).select('name');
-    if (project && projectChat.chatId) {
-      projectChat.chatId.name = project.name;
+      // Fetch project for naming
+      const project = await Project.findById(req.params.projectId).select('name');
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      // Create chat document
+      const chatDoc = new Chat({ type: 'project', name: `${project.name} Chat` });
+      await chatDoc.save();
+      
+      // Create projectChat and sync members
+      projectChat = new ProjectChat({ chatId: chatDoc._id, projectId: req.params.projectId });
+      await projectChat.save();
+      await projectChat.syncWithProjectMembers();
+      await projectChat.populate('chatId');
+    } else {
+      // Dynamically set chat name to project name
+      const project = await Project.findById(req.params.projectId).select('name');
+      if (project && projectChat.chatId) {
+        projectChat.chatId.name = project.name;
+      }
     }
     
     res.status(200).json(projectChat);

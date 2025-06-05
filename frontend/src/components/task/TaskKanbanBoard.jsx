@@ -47,39 +47,57 @@ export default function TaskKanbanBoard({ projectId, onTaskClick }) {
     return acc;
   }, {});
 
-  if (loading) return <div>Loading...</div>;
+  // Helper for priority badge colors
+  const getBadgeClasses = (priority) => {
+    if (priority === 'High') return 'bg-red-100 text-red-800';
+    if (priority === 'Medium') return 'bg-yellow-100 text-yellow-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
+    </div>
+  );
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4">
+      <div className="flex gap-4 overflow-x-auto mt-4 pb-4">
         {STATUS_COLUMNS.map(col => (
           <Droppable droppableId={col.id} key={col.id}>
             {(provided) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="bg-gray-100 rounded-lg p-4 flex-1 min-h-[400px]"
+                className="flex flex-col w-80 bg-gray-50 rounded-lg shadow flex-shrink-0"
               >
-                <h2 className="font-bold mb-2">{col.title}</h2>
-                {grouped[col.id].map((task, idx) => (
-                  <Draggable draggableId={task._id} index={idx} key={task._id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={`bg-white rounded shadow p-3 mb-3 cursor-pointer ${snapshot.isDragging ? 'ring-2 ring-blue-500' : ''}`}
-                        onClick={() => onTaskClick && onTaskClick(task)}
-                      >
-                        <div className="font-medium">{task.title}</div>
-                        <div className="text-xs text-gray-500">{task.priority} | Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
+                <div className="flex items-center justify-between px-4 py-2 bg-blue-600 rounded-t-lg">
+                  <h2 className="text-white font-semibold text-lg">{col.title} ({grouped[col.id].length})</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+                  {grouped[col.id].map((task, idx) => (
+                    <Draggable draggableId={task._id} index={idx} key={task._id}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer transition ${snapshot.isDragging ? 'ring-2 ring-blue-500' : 'hover:shadow-md'}`}
+                          onClick={() => onTaskClick && onTaskClick(task)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-gray-800">{task.title}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getBadgeClasses(task.priority)}`}>{task.priority}</span>
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                </div>
                 {provided.placeholder}
               </div>
-            )}
+             )}
           </Droppable>
         ))}
       </div>

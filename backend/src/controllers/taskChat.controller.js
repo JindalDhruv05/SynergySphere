@@ -5,17 +5,32 @@ import Task from '../models/task.model.js';
 // Get task chat
 export const getTaskChat = async (req, res) => {
   try {
-    const taskChat = await TaskChat.findOne({ taskId: req.params.taskId })
-      .populate('chatId');
+    let taskChat = await TaskChat.findOne({ taskId: req.params.taskId }).populate('chatId');
     
+    // If no chat exists for this task, create one
     if (!taskChat) {
-      return res.status(404).json({ message: 'Task chat not found' });
-    }
-    // Dynamically set chat name to task title
-    if (taskChat.chatId) {
+      // Fetch task for naming
       const task = await Task.findById(req.params.taskId).select('title');
-      if (task) {
-        taskChat.chatId.name = task.title;
+      if (!task) {
+        return res.status(404).json({ message: 'Task not found' });
+      }
+      
+      // Create chat document
+      const chatDoc = new Chat({ type: 'task', name: `${task.title} Chat` });
+      await chatDoc.save();
+      
+      // Create taskChat and sync members
+      taskChat = new TaskChat({ chatId: chatDoc._id, taskId: req.params.taskId });
+      await taskChat.save();
+      await taskChat.syncWithTaskMembers();
+      await taskChat.populate('chatId');
+    } else {
+      // Dynamically set chat name to task title
+      if (taskChat.chatId) {
+        const task = await Task.findById(req.params.taskId).select('title');
+        if (task) {
+          taskChat.chatId.name = task.title;
+        }
       }
     }
     

@@ -1,15 +1,15 @@
 import express from "express";
 import { 
-  getProjectChat, 
-  createProjectChat,
-  syncProjectChatMembers
-} from '../controllers/projectChat.controller.js';
-import { verifyToken, isProjectMember, isProjectAdmin } from '../middleware/auth.middleware.js';
+  getTaskChat, 
+  createTaskChat,
+  syncTaskChatMembers
+} from '../controllers/taskChat.controller.js';
+import { verifyToken, isTaskMember } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/project/:projectId', verifyToken, isProjectMember, getProjectChat);
-router.post('/project/:projectId', verifyToken, isProjectAdmin, createProjectChat);
-router.post('/project/:projectId/sync-members', verifyToken, isProjectAdmin, syncProjectChatMembers);
+router.get('/task/:taskId', verifyToken, isTaskMember, getTaskChat);
+router.post('/task/:taskId', verifyToken, isTaskMember, createTaskChat);
+router.post('/task/:taskId/sync-members', verifyToken, isTaskMember, syncTaskChatMembers);
 
 export default router;

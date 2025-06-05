@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import ProjectCard from '../components/project/ProjectCard';
-import TaskList from '../components/task/TaskList';
+import TaskKanbanBoard from '../components/task/TaskKanbanBoard';
 import NotificationPanel from '../components/common/NotificationPanel';
 import CreateTaskModal from '../components/task/CreateTaskModal';
 import api from '../services/api';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
-  const [recentTasks, setRecentTasks] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -22,10 +22,6 @@ export default function Dashboard() {
         // Fetch projects
         const projectsRes = await api.get('/projects');
         setProjects(projectsRes.data);
-        
-        // Fetch recent tasks
-        const tasksRes = await api.get('/tasks?limit=5');
-        setRecentTasks(tasksRes.data);
         
         // Fetch notifications
         const notificationsRes = await api.get('/notifications?limit=10');
@@ -41,7 +37,6 @@ export default function Dashboard() {
   }, []);
 
   const handleTaskCreated = (newTask) => {
-    setRecentTasks(prevTasks => [newTask, ...prevTasks].slice(0, 5));
     setIsTaskModalOpen(false);
   };
 
@@ -56,8 +51,22 @@ export default function Dashboard() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
+          {/* Task Board full-width */}
+          <section className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Task Board</h2>
+              <Link to="/tasks" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                View all tasks
+              </Link>
+            </div>
+            <TaskKanbanBoard
+              projectId=""
+              onTaskClick={(task) => navigate(`/tasks/${task._id}`)}
+            />
+          </section>
+          {/* Projects, Quick Actions, Notifications below */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">My Projects</h2>
@@ -91,24 +100,6 @@ export default function Dashboard() {
             </section>
             
             <section className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Tasks</h2>
-                <Link to="/tasks" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                  View all tasks
-                </Link>
-              </div>
-              
-              <TaskList tasks={recentTasks} />
-            </section>
-          </div>
-          
-          <div className="space-y-6">
-            <section className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Notifications</h2>
-              <NotificationPanel notifications={notifications} />
-            </section>
-            
-            <section className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">
                 <button
@@ -130,6 +121,11 @@ export default function Dashboard() {
                   Manage documents
                 </Link>
               </div>
+            </section>
+            
+            <section className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Notifications</h2>
+              <NotificationPanel notifications={notifications} />
             </section>
           </div>
         </div>

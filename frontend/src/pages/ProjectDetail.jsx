@@ -5,6 +5,7 @@ import TaskList from '../components/task/TaskList';
 import ProjectMembers from '../components/project/ProjectMembers';
 import ProjectDocuments from '../components/project/ProjectDocuments';
 import CreateTaskModal from '../components/task/CreateTaskModal';
+import ChatDetail from './ChatDetail';
 import api from '../services/api';
 
 export default function ProjectDetail() {
@@ -15,10 +16,34 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [projectChat, setProjectChat] = useState(null);
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     fetchProjectDetails();
+    // Reset chat data on project change
+    setProjectChat(null);
   }, [id]);
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      const fetchChat = async () => {
+        setChatLoading(true);
+        try {
+          console.log('Fetching project chat for project ID:', id);
+          const res = await api.get(`/project-chats/project/${id}`);
+          console.log('Project chat response:', res.data);
+          setProjectChat(res.data);
+        } catch (err) {
+          console.error('Error fetching project chat:', err);
+          console.error('Error response:', err.response?.data);
+          setProjectChat(null);
+        } finally {
+          setChatLoading(false);
+        }
+      };
+      fetchChat();
+    }
+  }, [activeTab, id]);
 
   const fetchProjectDetails = async () => {
     try {
@@ -68,9 +93,42 @@ export default function ProjectDetail() {
       case 'documents':
         return <ProjectDocuments projectId={id} />;
       case 'chat':
+        if (chatLoading) {
+          return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div></div>;
+        }
+        if (!projectChat || !projectChat.chatId) {
+          return (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-center">
+                <p className="text-gray-500 mb-4">Failed to load project chat</p>
+                <button
+                  onClick={() => {
+                    // Retry fetching chat
+                    const fetchChat = async () => {
+                      setChatLoading(true);
+                      try {
+                        const res = await api.get(`/project-chats/project/${id}`);
+                        setProjectChat(res.data);
+                      } catch (err) {
+                        console.error('Error retrying project chat:', err);
+                        setProjectChat(null);
+                      } finally {
+                        setChatLoading(false);
+                      }
+                    };
+                    fetchChat();
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          );
+        }
         return (
-          <div className="text-center py-8 text-gray-500">
-            <p>Project chat functionality will be available soon.</p>
+          <div className="h-[600px]">
+            <ChatDetail chatId={projectChat.chatId._id} isEmbedded={true} />
           </div>
         );
       default:

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
+import ChatDetail from './ChatDetail';
+import AddTaskMemberModal from '../components/task/AddTaskMemberModal';
 import { format } from 'date-fns';
 
 export default function TaskDetail() {
@@ -16,12 +18,35 @@ export default function TaskDetail() {
   const [activeTab, setActiveTab] = useState('details');
   const [newComment, setNewComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTask, setEditedTask] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [editedTask, setEditedTask] = useState({});  const [submitting, setSubmitting] = useState(false);
+  const [taskChat, setTaskChat] = useState(null);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTaskData();
+    setTaskChat(null);
   }, [id]);
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      const fetchChat = async () => {
+        setChatLoading(true);
+        try {
+          console.log('Fetching task chat for task ID:', id);
+          const res = await api.get(`/task-chats/task/${id}`);
+          console.log('Task chat response:', res.data);
+          setTaskChat(res.data);
+        } catch (err) {
+          console.error('Error fetching task chat:', err);
+          console.error('Error response:', err.response?.data);
+          setTaskChat(null);
+        } finally {
+          setChatLoading(false);
+        }
+      };
+      fetchChat();
+    }
+  }, [activeTab, id]);
 
   const fetchTaskData = async () => {
     try {
@@ -94,13 +119,42 @@ export default function TaskDetail() {
       setSubmitting(false);
     }
   };
-
   const handleDeleteComment = async (commentId) => {
     try {
       await api.delete(`/tasks/${id}/comments/${commentId}`);
       setComments(comments.filter(comment => comment._id !== commentId));
     } catch (error) {
       console.error('Error deleting comment:', error);
+    }
+  };
+
+  const handleMemberAdded = async (newMember) => {
+    // Refresh the members list
+    try {
+      const membersRes = await api.get(`/tasks/${id}/members`);
+      setMembers(membersRes.data);
+    } catch (error) {
+      console.error('Error refreshing members:', error);
+    }
+  };
+
+  const handleRemoveTaskMember = async (userId) => {
+    try {
+      await api.delete(`/tasks/${id}/members/${userId}`);
+      setMembers(members.filter(member => member.userId._id !== userId));
+    } catch (error) {
+      console.error('Error removing task member:', error);
+    }
+  };
+
+  const handleUpdateTaskMemberRole = async (userId, newRole) => {
+    try {
+      await api.put(`/tasks/${id}/members/${userId}`, { role: newRole });
+      setMembers(members.map(member => 
+        member.userId._id === userId ? { ...member, role: newRole } : member
+      ));
+    } catch (error) {
+      console.error('Error updating member role:', error);
     }
   };
 
@@ -389,14 +443,14 @@ export default function TaskDetail() {
             )}
           </div>
         );
-      
-      case 'members':
+        case 'members':
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">Assigned Members</h2>
               <button
                 type='button'
+                onClick={() => setIsAddMemberModalOpen(true)}
                 className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                 Add Member
               </button>
@@ -422,10 +476,23 @@ export default function TaskDetail() {
                         <p className="text-xs text-gray-500">{member.userId.email}</p>
                       </div>
                     </div>
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {member.role}
-                      </span>
+                    <div className="flex items-center">
+                      <select
+                        className="mr-4 block pl-3 pr-10 py-1 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                        value={member.role}
+                        onChange={(e) => handleUpdateTaskMemberRole(member.userId._id, e.target.value)}
+                      >
+                        <option value="responsible">Responsible</option>
+                        <option value="accountable">Accountable</option>
+                        <option value="consulted">Consulted</option>
+                        <option value="informed">Informed</option>
+                      </select>
+                      <button
+                        type='button'
+                        onClick={() => handleRemoveTaskMember(member.userId._id)}
+                        className="text-red-600 hover:text-red-900 text-sm">
+                        Remove
+                      </button>
                     </div>
                   </li>
                 ))}
@@ -491,6 +558,54 @@ export default function TaskDetail() {
                 ))}
               </ul>
             )}
+          </div>
+        );
+        case 'chat':
+        if (chatLoading) {
+          return (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
+            </div>
+          );
+        }
+          if (!taskChat) {
+          return (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-center">
+                <p className="text-gray-500 mb-4">Failed to load task chat</p>
+                <button
+                  onClick={() => {
+                    // Trigger the useEffect to fetch/create the chat again
+                    const fetchChat = async () => {
+                      setChatLoading(true);
+                      try {
+                        console.log('Retrying task chat for task ID:', id);
+                        const res = await api.get(`/task-chats/task/${id}`);
+                        console.log('Task chat retry response:', res.data);
+                        setTaskChat(res.data);
+                      } catch (err) {
+                        console.error('Error retrying task chat:', err);
+                        setTaskChat(null);
+                      } finally {
+                        setChatLoading(false);
+                      }
+                    };
+                    fetchChat();
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          );
+        }
+        
+        // Use populated chatId._id or fallback to chatId string
+        const cid = typeof taskChat.chatId === 'object' ? taskChat.chatId._id : taskChat.chatId;
+        return (
+          <div className="h-[600px]">
+            <ChatDetail chatId={cid} isEmbedded={true} />
           </div>
         );
       
@@ -579,12 +694,30 @@ export default function TaskDetail() {
               onClick={() => setActiveTab('documents')}>
               Documents
             </button>
+            <button
+              type='button'
+              className={`${
+                activeTab === 'chat'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+              onClick={() => setActiveTab('chat')}>
+              Chat
+            </button>
           </nav>
-        </div>
-        <div className="p-6">
+        </div>        <div className="p-6">
           {renderTabContent()}
         </div>
       </div>
+      
+      {/* Add Task Member Modal */}
+      <AddTaskMemberModal 
+        isOpen={isAddMemberModalOpen}
+        onClose={() => setIsAddMemberModalOpen(false)}
+        taskId={id}
+        onMemberAdded={handleMemberAdded}
+        existingMembers={members}
+      />
     </DashboardLayout>
   );
 }
