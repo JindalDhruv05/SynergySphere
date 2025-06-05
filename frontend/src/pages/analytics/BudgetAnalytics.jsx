@@ -39,24 +39,40 @@ export default function BudgetAnalytics({ data, formatCurrency }) {
       </div>
     );
   }
-
   const {
     summary = {},
-    expensesByCategory = [],
-    expensesTrend = [],
-    projectBudgets = [],
-    upcomingExpenses = [],
+    budgetAnalysis = [],
+    expenseTrends = [],
+    expenseByCategory = [],
+    resourceAllocation = [],
     timeRange = 30
   } = data;
 
   const {
-    totalBudget = 0,
-    totalSpent = 0,
-    totalRemaining = 0,
-    budgetUtilization = 0,
-    averageMonthlySpend = 0,
-    overBudgetProjects = 0
+    totalMembers = 0,
+    totalHours = 0,
+    averageUtilization = 0,
+    overallocated = 0
   } = summary;
+
+  // Transform resource utilization data to budget analytics format
+  const totalBudget = budgetAnalysis.reduce((sum, item) => sum + (item.budgeted || 0), 0);
+  const totalSpent = budgetAnalysis.reduce((sum, item) => sum + (item.spent || 0), 0);
+  const totalRemaining = totalBudget - totalSpent;
+  const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const averageMonthlySpend = totalSpent / Math.max(1, Math.ceil(timeRange / 30));
+  const overBudgetProjects = budgetAnalysis.filter(item => item.spent > item.budgeted).length;
+
+  // Transform data for frontend
+  const expensesByCategory = expenseByCategory;
+  const expensesTrend = expenseTrends;
+  const projectBudgets = budgetAnalysis.map(item => ({
+    projectName: item.projectName || `Project ${item.projectId}`,
+    totalBudget: item.budgeted || 0,
+    totalSpent: item.spent || 0,
+    budgetUtilization: item.budgeted > 0 ? (item.spent / item.budgeted) * 100 : 0
+  }));
+  const upcomingExpenses = []; // Not provided by backend
 
   // Transform data for charts
   const expensesCategoryData = expensesByCategory.map(item => ({

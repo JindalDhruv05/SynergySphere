@@ -86,8 +86,7 @@ export default function Analytics() {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch all analytics data in parallel
+        // Fetch all analytics data in parallel
       const [
         dashboardRes,
         productivityRes,
