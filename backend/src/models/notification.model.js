@@ -1,8 +1,7 @@
 import mongoose from 'mongoose';
 
 const NotificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { 
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },  type: { 
     type: String, 
     enum: [
       'task_assigned', 
@@ -10,6 +9,7 @@ const NotificationSchema = new mongoose.Schema({
       'comment_added', 
       'deadline_approaching',
       'project_invitation',
+      'project_member_added',
       'document_shared',
       'chat_ping'    
     ], 

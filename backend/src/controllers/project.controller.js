@@ -170,12 +170,13 @@ export const addProjectMember = async (req, res) => {
     const projectChat = await ProjectChat.findOne({ projectId: req.params.id });
     if (projectChat) {
       await projectChat.syncWithProjectMembers();
-    }
-
-    // Create notification for the added user (only if it's not self-assignment)
+    }    // Create notification for the added user (only if it's not self-assignment)
     if (userId !== req.user.id) {
+      console.log(`🔔 Creating project member notification for user ${userId}`);
       const project = await Project.findById(req.params.id);
       const adder = await User.findById(req.user.id).select('name');
+      
+      console.log(`📋 Project: ${project.name}, Adder: ${adder.name}`);
       
       const notif = await createNotification(
         userId,
@@ -185,13 +186,21 @@ export const addProjectMember = async (req, res) => {
       );
 
       if (notif) {
+        console.log('✅ Project member notification created:', notif);
         // Emit notification via Socket.IO if user is connected
         const io = getSocketInstance();
         const userSocketId = getConnectedUsers().get(userId);
         if (io && userSocketId) {
+          console.log(`🔔 Emitting project notification to socket ${userSocketId}`);
           io.to(userSocketId).emit('new_notification', notif);
+        } else {
+          console.log(`⚠️ User ${userId} not connected via socket for project notification`);
         }
+      } else {
+        console.log('❌ Failed to create project member notification');
       }
+    } else {
+      console.log('⏭️ Skipping notification - user added themselves to project');
     }
 
     res.status(201).json(projectMember);

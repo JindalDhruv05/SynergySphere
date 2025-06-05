@@ -139,20 +139,31 @@ const handleChatEvents = (socket, io) => {
       
       // Update chat's updatedAt timestamp
       await Chat.findByIdAndUpdate(chatId, { updatedAt: Date.now() });
+        // Handle @mentions (ping notifications)
+      // Support both @username and @"full name" formats
+      const mentionPatterns = [
+        /@"([^"]+)"/g,      // @"John Doe" - quoted names with spaces
+        /@'([^']+)'/g,      // @'John Doe' - single quoted names
+        /@([\w]+)/g         // @username - simple usernames without spaces
+      ];
       
-      // Handle @mentions (ping notifications)
-      const mentionPattern = /@([\w]+)/g;
       const mentions = new Set();
-      let match;
-      while ((match = mentionPattern.exec(content))) {
-        mentions.add(match[1]);
-      }
-        if (mentions.size > 0) {
+      
+      for (const pattern of mentionPatterns) {
+        let match;
+        while ((match = pattern.exec(content))) {
+          mentions.add(match[1]);
+        }
+        // Reset regex lastIndex for next pattern
+        pattern.lastIndex = 0;
+      }        if (mentions.size > 0) {
         // Fetch sender name
         const sender = await User.findById(socket.user.id).select('name');
         console.log(`🎯 Processing @mentions from ${sender.name}:`, Array.from(mentions));
+        console.log(`📝 Original message content: "${content}"`);
         
         for (const username of mentions) {
+          console.log(`🔍 Looking for user with name: "${username}"`);
           const mentionedUser = await User.findOne({ name: username });
           if (mentionedUser && mentionedUser._id.toString() !== socket.user.id) {
             console.log(`📝 Creating notification for @${username} (${mentionedUser._id})`);
