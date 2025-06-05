@@ -9,6 +9,7 @@ import {
   ChatBubbleLeftRightIcon,
   DocumentIcon,
   BellIcon,
+  ChartBarIcon,
   UserCircleIcon,
   Bars3Icon,
   XMarkIcon
@@ -66,11 +67,11 @@ export default function DashboardLayout({ children, title }) {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
-  };
-  const navigation = [
+  };  const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Projects', href: '/projects', icon: FolderIcon },
     { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentListIcon },
+    { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
     { name: 'Chats', href: '/chats', icon: ChatBubbleLeftRightIcon },
     { name: 'Documents', href: '/documents', icon: DocumentIcon },
     { name: 'Notifications', href: '/notifications', icon: BellIcon },

@@ -12,6 +12,7 @@ import projectDocumentRoutes from "./projectDocument.route.js";
 import taskDocumentRoutes from "./taskDocument.route.js";
 import notificationRoutes from "./notification.route.js";
 import expenseRoutes from "./expense.route.js";
+import analyticsRoutes from "./analytics.route.js";
 
 const router = express.Router();
 
@@ -34,5 +35,6 @@ router.use('/project-documents', projectDocumentRoutes);
 router.use('/task-documents', taskDocumentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/expenses', expenseRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;

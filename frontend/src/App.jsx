@@ -16,6 +16,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import Tasks from './pages/Tasks';
 import CreateTask from './pages/CreateTask';  
 import TaskDetail from './pages/TaskDetail';
+import Analytics from './pages/Analytics';
 import Chats from './pages/Chats';
 import ChatDetail from './pages/ChatDetail';
 import Documents from './pages/Documents';
@@ -86,10 +87,14 @@ function App() {
                 <ProtectedRoute>
                   <CreateTask />
                 </ProtectedRoute>
-              } />
-              <Route path="/tasks/:id" element={
+              } />              <Route path="/tasks/:id" element={
                 <ProtectedRoute>
                   <TaskDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="/chats" element={
