@@ -3,6 +3,8 @@ import ProjectMember from '../models/projectMember.model.js';
 import User from '../models/user.model.js'; 
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 import ProjectChat from '../models/projectChat.model.js';
+import { createNotification } from './notification.controller.js';
+import { getSocketInstance, getConnectedUsers } from '../socket/socketHandlers.js';
 
 // Get all projects for current user
 export const getProjects = async (req, res) => {
@@ -162,13 +164,34 @@ export const addProjectMember = async (req, res) => {
       userId,
       role: role || 'member'
     });
-    
-    await projectMember.save();
+      await projectMember.save();
 
     // Sync project chat members if chat exists
     const projectChat = await ProjectChat.findOne({ projectId: req.params.id });
     if (projectChat) {
       await projectChat.syncWithProjectMembers();
+    }
+
+    // Create notification for the added user (only if it's not self-assignment)
+    if (userId !== req.user.id) {
+      const project = await Project.findById(req.params.id);
+      const adder = await User.findById(req.user.id).select('name');
+      
+      const notif = await createNotification(
+        userId,
+        'project_member_added',
+        `${adder.name} added you to project: ${project.name}`,
+        req.params.id
+      );
+
+      if (notif) {
+        // Emit notification via Socket.IO if user is connected
+        const io = getSocketInstance();
+        const userSocketId = getConnectedUsers().get(userId);
+        if (io && userSocketId) {
+          io.to(userSocketId).emit('new_notification', notif);
+        }
+      }
     }
 
     res.status(201).json(projectMember);

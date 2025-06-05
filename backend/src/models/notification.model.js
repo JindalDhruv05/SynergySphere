@@ -10,7 +10,8 @@ const NotificationSchema = new mongoose.Schema({
       'comment_added', 
       'deadline_approaching',
       'project_invitation',
-      'document_shared'
+      'document_shared',
+      'chat_ping'    
     ], 
     required: true 
   },

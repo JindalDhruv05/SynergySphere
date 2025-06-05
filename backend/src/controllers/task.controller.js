@@ -4,6 +4,8 @@ import User from '../models/user.model.js';
 import Comment from '../models/comment.model.js';
 import TaskChat from '../models/taskChat.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
+import { createNotification } from './notification.controller.js';
+import { getSocketInstance, getConnectedUsers } from '../socket/socketHandlers.js';
 
 // Get all tasks for current user
 export const getTasks = async (req, res) => {
@@ -280,13 +282,50 @@ export const addTaskMember = async (req, res) => {
       role: role || 'responsible',
       assignedBy: req.user.id
     });
-    
-    await taskMember.save();
+      await taskMember.save();
 
     // Sync task chat members if chat exists
     const taskChat = await TaskChat.findOne({ taskId: req.params.id });
     if (taskChat) {
       await taskChat.syncWithTaskMembers();
+    }    // Create notification for the assigned user (only if it's not self-assignment)
+    console.log(`DEBUG: Adding member - userId: ${userId}, req.user.id: ${req.user.id}`);
+    if (userId !== req.user.id) {
+      console.log('DEBUG: Creating notification for task assignment');
+      const task = await Task.findById(req.params.id);
+      const assigner = await User.findById(req.user.id).select('name');
+      
+      console.log(`DEBUG: Task: ${task?.title}, Assigner: ${assigner?.name}`);
+      
+      const notif = await createNotification(
+        userId,
+        'task_assigned',
+        `${assigner.name} assigned you to task: ${task.title}`,
+        req.params.id
+      );
+
+      console.log('DEBUG: Notification created:', !!notif);
+      if (notif) {
+        console.log('DEBUG: Notification details:', JSON.stringify(notif, null, 2));
+        
+        // Emit notification via Socket.IO if user is connected
+        const io = getSocketInstance();
+        const connectedUsers = getConnectedUsers();
+        const userSocketId = connectedUsers.get(userId);
+        
+        console.log(`DEBUG: Socket IO: ${!!io}, Connected users count: ${connectedUsers.size}, User socket ID: ${userSocketId}`);
+        
+        if (io && userSocketId) {
+          io.to(userSocketId).emit('new_notification', notif);
+          console.log('DEBUG: Notification emitted via socket');
+        } else {
+          console.log('DEBUG: User not connected via socket or no socket instance');
+        }
+      } else {
+        console.log('DEBUG: Failed to create notification');
+      }
+    } else {
+      console.log('DEBUG: Skipping notification - self assignment');
     }
 
     res.status(201).json(taskMember);

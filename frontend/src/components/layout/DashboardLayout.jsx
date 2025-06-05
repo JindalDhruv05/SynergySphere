@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { 
   HomeIcon, 
   FolderIcon, 
@@ -12,14 +13,16 @@ import {
   Bars3Icon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
 
 export default function DashboardLayout({ children, title }) {
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -30,15 +33,22 @@ export default function DashboardLayout({ children, title }) {
       ) {
         setProfileDropdownOpen(false);
       }
+      if (
+        notificationDropdownOpen &&
+        !event.target.closest('#notification-button') &&
+        !event.target.closest('#notification-dropdown')
+      ) {
+        setNotificationDropdownOpen(false);
+      }
     }
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [profileDropdownOpen]);
-
+  }, [profileDropdownOpen, notificationDropdownOpen]);
   // Close dropdown when navigating
   useEffect(() => {
     setProfileDropdownOpen(false);
+    setNotificationDropdownOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -165,15 +175,83 @@ export default function DashboardLayout({ children, title }) {
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex items-center">
               <h1 className="text-2xl font-semibold text-gray-900">{pageTitle}</h1>
-            </div>
-            <div className="ml-4 flex items-center md:ml-6">
-              <button 
-                type="button"
-                className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <span className="sr-only">View notifications</span>
-                <BellIcon className="h-6 w-6" aria-hidden="true" />
-              </button>
+            </div>            <div className="ml-4 flex items-center md:ml-6">
+              {/* Notifications dropdown */}
+              <div className="relative">
+                <button 
+                  type="button"
+                  id="notification-button"
+                  className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                >
+                  <span className="sr-only">View notifications</span>
+                  <BellIcon className="h-6 w-6" aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification dropdown */}
+                {notificationDropdownOpen && (
+                  <div 
+                    id="notification-dropdown"
+                    className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1 max-h-96 overflow-y-auto">
+                      <div className="px-4 py-2 border-b border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                      </div>
+                      {notifications && notifications.length > 0 ? (
+                        notifications.slice(0, 5).map((notification) => (
+                          <div
+                            key={notification._id}
+                            className={`px-4 py-3 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className="flex items-start">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {notification.type.replace(/_/g, ' ')}
+                                </p>
+                                <p className="text-sm text-gray-500 truncate">
+                                  {notification.content}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
+                                </p>
+                              </div>
+                              {!notification.read && (
+                                <button
+                                  type="button"
+                                  onClick={() => markAsRead(notification._id)}
+                                  className="ml-2 text-xs text-blue-600 hover:text-blue-500"
+                                >
+                                  Mark read
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-center text-sm text-gray-500">
+                          No notifications yet
+                        </div>
+                      )}
+                      <div className="px-4 py-2 border-t border-gray-200">
+                        <Link
+                          to="/notifications"
+                          className="text-sm text-blue-600 hover:text-blue-500"
+                          onClick={() => setNotificationDropdownOpen(false)}
+                        >
+                          View all notifications
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Profile dropdown */}
               <div className="ml-3 relative">

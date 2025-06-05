@@ -4,6 +4,7 @@ import User from '../models/user.model.js';
 import Chat from '../models/chat.model.js';
 import Message from '../models/message.model.js';
 import ChatMember from '../models/chatMember.model.js';
+import { createNotification } from '../controllers/notification.controller.js';
 
 let io = null; // Store the io instance
 const connectedUsers = new Map(); // Store socket connections
@@ -36,23 +37,24 @@ export const initializeSocketHandlers = (socketIo) => {
       next(new Error('Authentication error'));
     }
   });
-
   io.on('connection', (socket) => {
-    console.log(`User ${socket.user.name} connected: ${socket.id}`);
+    console.log(`✅ User ${socket.user.name} connected: ${socket.id}`);
     
     // Store user connection
     connectedUsers.set(socket.user.id.toString(), socket.id);
+    console.log(`👥 Connected users count: ${connectedUsers.size}`);
+    console.log(`🔗 User ${socket.user.name} mapped to socket ${socket.id}`);
     
     // Join user to their chats
     handleJoinUserChats(socket);
     
     // Handle chat events
     handleChatEvents(socket, io);
-    
-    // Handle disconnection
+      // Handle disconnection
     socket.on('disconnect', () => {
-      console.log(`User ${socket.user.name} disconnected: ${socket.id}`);
+      console.log(`❌ User ${socket.user.name} disconnected: ${socket.id}`);
       connectedUsers.delete(socket.user.id.toString());
+      console.log(`👥 Connected users count: ${connectedUsers.size}`);
     });
   });
 };
@@ -106,7 +108,6 @@ const handleChatEvents = (socket, io) => {
       socket.emit('joined_chat', { chatId, success: false, error: error.message });
     }
   });
-
   // Send message
   socket.on('send_message', async (data) => {
     try {
@@ -138,6 +139,52 @@ const handleChatEvents = (socket, io) => {
       
       // Update chat's updatedAt timestamp
       await Chat.findByIdAndUpdate(chatId, { updatedAt: Date.now() });
+      
+      // Handle @mentions (ping notifications)
+      const mentionPattern = /@([\w]+)/g;
+      const mentions = new Set();
+      let match;
+      while ((match = mentionPattern.exec(content))) {
+        mentions.add(match[1]);
+      }
+        if (mentions.size > 0) {
+        // Fetch sender name
+        const sender = await User.findById(socket.user.id).select('name');
+        console.log(`🎯 Processing @mentions from ${sender.name}:`, Array.from(mentions));
+        
+        for (const username of mentions) {
+          const mentionedUser = await User.findOne({ name: username });
+          if (mentionedUser && mentionedUser._id.toString() !== socket.user.id) {
+            console.log(`📝 Creating notification for @${username} (${mentionedUser._id})`);
+            
+            // Create notification
+            const notif = await createNotification(
+              mentionedUser._id,
+              'chat_ping',
+              `${sender.name} mentioned you in chat`,
+              chatId
+            );
+            
+            if (notif) {
+              console.log('✅ Notification created:', notif);
+              // Emit notification via Socket.IO to the mentioned user
+              const userSocketId = connectedUsers.get(mentionedUser._id.toString());
+              if (userSocketId) {
+                console.log(`🔔 Emitting notification to socket ${userSocketId}`);
+                io.to(userSocketId).emit('new_notification', notif);
+              } else {
+                console.log(`⚠️ User ${mentionedUser.name} not connected via socket`);
+              }
+            } else {
+              console.log('❌ Failed to create notification');
+            }
+          } else if (mentionedUser && mentionedUser._id.toString() === socket.user.id) {
+            console.log(`⏭️ Skipping self-mention for ${username}`);
+          } else {
+            console.log(`⚠️ User not found for mention: ${username}`);
+          }
+        }
+      }
       
       // Emit message to all users in the chat room
       io.to(`chat_${chatId}`).emit('new_message', {
