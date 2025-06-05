@@ -4,6 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import api from '../services/api';
 import ChatDetail from './ChatDetail';
 import AddTaskMemberModal from '../components/task/AddTaskMemberModal';
+import CreateSubtaskModal from '../components/task/CreateSubtaskModal';
 import { format } from 'date-fns';
 
 export default function TaskDetail() {
@@ -22,6 +23,7 @@ export default function TaskDetail() {
   const [taskChat, setTaskChat] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [isAddSubtaskModalOpen, setIsAddSubtaskModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTaskData();
@@ -155,6 +157,16 @@ export default function TaskDetail() {
       ));
     } catch (error) {
       console.error('Error updating member role:', error);
+    }
+  };
+
+  const handleSubtaskCreated = async (newSubtask) => {
+    // Refresh the subtasks list
+    try {
+      const subtasksRes = await api.get(`/tasks/${id}/subtasks`);
+      setSubtasks(subtasksRes.data);
+    } catch (error) {
+      console.error('Error refreshing subtasks:', error);
     }
   };
 
@@ -325,12 +337,13 @@ export default function TaskDetail() {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">Subtasks</h2>
-              <Link
-                to={`/tasks/${id}/create-subtask`}
+              <button
+                type="button"
+                onClick={() => setIsAddSubtaskModalOpen(true)}
                 className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
               >
                 Add Subtask
-              </Link>
+              </button>
             </div>
             
             {subtasks.length === 0 ? (
@@ -717,6 +730,13 @@ export default function TaskDetail() {
         taskId={id}
         onMemberAdded={handleMemberAdded}
         existingMembers={members}
+      />
+      {/* Add Subtask Modal */}
+      <CreateSubtaskModal
+        isOpen={isAddSubtaskModalOpen}
+        onClose={() => setIsAddSubtaskModalOpen(false)}
+        parentTaskId={id}
+        onSubtaskCreated={handleSubtaskCreated}
       />
     </DashboardLayout>
   );
