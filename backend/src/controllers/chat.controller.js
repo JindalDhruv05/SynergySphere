@@ -9,6 +9,7 @@ import TaskChat from '../models/taskChat.model.js';
 import Task from '../models/task.model.js';
 import ProjectMember from '../models/projectMember.model.js';
 import TaskMember from '../models/taskMember.model.js';
+import { createNotification } from './notification.controller.js';
 
 // Get all chats for current user
 export const getChats = async (req, res) => {
@@ -314,7 +315,36 @@ export const sendMessage = async (req, res) => {
     if (io) {
       io.to(`chat_${req.params.id}`).emit('new_message', message);
     }
-    
+
+    // Handle @mentions (ping)
+    const mentionPattern = /@([\w]+)/g;
+    const mentions = new Set();
+    let match;
+    while ((match = mentionPattern.exec(content))) {
+      mentions.add(match[1]);
+    }
+    if (mentions.size > 0) {
+      // Fetch sender name
+      const sender = await User.findById(req.user.id).select('name');
+      for (const username of mentions) {
+        const mentionedUser = await User.findOne({ name: username });
+        if (mentionedUser) {
+          // Create notification
+          const notif = await createNotification(
+            mentionedUser._id,
+            'chat_ping',
+            `${sender.name} mentioned you in chat`,
+            req.params.id
+          );
+          // Emit notification via Socket.IO
+          const userSocketId = getConnectedUsers().get(mentionedUser._id.toString());
+          if (userSocketId) {
+            getSocketInstance().to(userSocketId).emit('new_notification', notif);
+          }
+        }
+      }
+    }
+
     res.status(201).json(message);
   } catch (error) {
     res.status(500).json({ message: 'Error sending message', error: error.message });

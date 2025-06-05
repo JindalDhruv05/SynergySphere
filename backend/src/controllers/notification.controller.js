@@ -108,6 +108,8 @@ export const deleteNotification = async (req, res) => {
 // Create notification (utility function for internal use)
 export const createNotification = async (userId, type, content, relatedItemId) => {
   try {
+    console.log(`DEBUG: Creating notification - userId: ${userId}, type: ${type}, content: ${content}, relatedItemId: ${relatedItemId}`);
+    
     const notification = new Notification({
       userId,
       type,
@@ -117,6 +119,7 @@ export const createNotification = async (userId, type, content, relatedItemId) =
     });
     
     await notification.save();
+    console.log('DEBUG: Notification saved successfully:', notification._id);
     return notification;
   } catch (error) {
     console.error('Error creating notification:', error);

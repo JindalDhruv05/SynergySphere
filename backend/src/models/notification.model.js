@@ -11,8 +11,9 @@ const NotificationSchema = new mongoose.Schema({
       'deadline_approaching',
       'project_invitation',
       'document_shared',
-      'budget_threshold'
-    ], 
+      'budget_threshold',
+      'chat_ping'    
+], 
     required: true 
   },
   title: { type: String, required: true },
