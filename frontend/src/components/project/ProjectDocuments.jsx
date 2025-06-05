@@ -196,7 +196,7 @@ export default function ProjectDocuments({ projectId }) {
                     </button>
                     <Button
                       onClick={() => handleRemoveDocument(document._id)}
-                      className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-gray-50"
+                      className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-red-500 hover:bg-gray-50"
                     >
                       Remove
                     </Button>
