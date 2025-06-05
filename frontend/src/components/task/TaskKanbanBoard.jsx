@@ -42,17 +42,23 @@ export default function TaskKanbanBoard({ projectId, onTaskClick }) {
     }
   };
 
-  const grouped = STATUS_COLUMNS.reduce((acc, col) => {
-    acc[col.id] = tasks.filter(t => t.status === col.id);
-    return acc;
-  }, {});
-
   // Helper for priority badge colors
   const getBadgeClasses = (priority) => {
     if (priority === 'High') return 'bg-red-100 text-red-800';
     if (priority === 'Medium') return 'bg-yellow-100 text-yellow-800';
     return 'bg-green-100 text-green-800';
   };
+
+  // Helper for sorting by priority
+  const priorityOrder = { High: 0, Medium: 1, Low: 2 };
+
+  // Sort tasks in each column by priority (High > Medium > Low)
+  const grouped = STATUS_COLUMNS.reduce((acc, col) => {
+    acc[col.id] = tasks
+      .filter(t => t.status === col.id)
+      .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3));
+    return acc;
+  }, {});
 
   if (loading) return (
     <div className="flex justify-center items-center h-64">
