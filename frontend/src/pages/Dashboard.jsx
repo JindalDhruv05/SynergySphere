@@ -36,13 +36,11 @@ export default function Dashboard() {
 
   const handleTaskCreated = (newTask) => {
     setIsTaskModalOpen(false);
-  };
-
-  return (
+  };  return (
     <DashboardLayout>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">Welcome to SynergySphere</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Welcome to SynergySphere</p>
       </div>
       {loading ? (
         <div className="flex justify-center items-center h-64">

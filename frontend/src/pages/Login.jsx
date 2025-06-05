@@ -21,14 +21,12 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
+  };  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-10 rounded-lg shadow-md">
         <div>
-          <h1 className="text-center text-3xl font-extrabold text-gray-900">Sign in to SynergySphere</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <h1 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white">Sign in to SynergySphere</h1>
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Or{' '}
             <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
               create a new account

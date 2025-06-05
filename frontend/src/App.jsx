@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import './App.css';
 
 // Import pages
@@ -21,6 +22,7 @@ import Chats from './pages/Chats';
 import ChatDetail from './pages/ChatDetail';
 import Documents from './pages/Documents';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
@@ -46,9 +48,10 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <SocketProvider>
-        <NotificationProvider>
-          <Router>
+      <ThemeProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <Router>
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
@@ -115,19 +118,23 @@ function App() {
                 <ProtectedRoute>
                   <Notifications />
                 </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
+              } />              <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
               } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } />
               
               {/* 404 route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+              <Route path="*" element={<NotFound />} />            </Routes>
           </Router>
         </NotificationProvider>
       </SocketProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

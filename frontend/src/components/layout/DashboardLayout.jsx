@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   HomeIcon, 
   FolderIcon, 
@@ -32,6 +33,7 @@ const formatNotificationDate = (dateString) => {
 export default function DashboardLayout({ children, title }) {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, fetchNotifications } = useNotifications();
+  const { isDark } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
@@ -84,9 +86,8 @@ export default function DashboardLayout({ children, title }) {
 
   // Get page title from props or derive from current path
   const pageTitle = title || navigation.find(item => isActive(item.href))?.name || 'Dashboard';
-
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -96,17 +97,16 @@ export default function DashboardLayout({ children, title }) {
         ></div>
       )}
       {/* Mobile sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-full max-w-xs transform bg-white transition duration-300 ease-in-out lg:hidden ${
+      <div className={`fixed inset-y-0 left-0 z-40 w-full max-w-xs transform bg-white dark:bg-gray-800 transition duration-300 ease-in-out lg:hidden ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="h-full flex flex-col overflow-y-auto">
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+      }`}>        <div className="h-full flex flex-col overflow-y-auto">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-blue-600">SynergySphere</span>
+              <span className="text-xl font-bold text-blue-600 dark:text-blue-400">SynergySphere</span>
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
               onClick={() => setSidebarOpen(false)}
             >
               <span className="sr-only">Close sidebar</span>
@@ -115,22 +115,21 @@ export default function DashboardLayout({ children, title }) {
           </div>
           
           <nav className="mt-5 px-2 space-y-1">
-            {navigation.map((item) => (
-              <Link
+            {navigation.map((item) => (              <Link
                 key={item.name}
                 to={item.href}
-                className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
+                className={`group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors duration-200 ${
                   isActive(item.href)
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                 }`}
                 onClick={() => setSidebarOpen(false)}
               >
                 <item.icon 
                   className={`mr-4 h-6 w-6 ${
                     isActive(item.href) 
-                      ? 'text-blue-500' 
-                      : 'text-gray-400 group-hover:text-gray-500'
+                      ? 'text-blue-500 dark:text-blue-400' 
+                      : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
                   }`} 
                   aria-hidden="true" 
                 />
@@ -139,23 +138,21 @@ export default function DashboardLayout({ children, title }) {
             ))}
           </nav>
         </div>
-      </div>
-      {/* Desktop sidebar */}
+      </div>      {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
-        <div className="flex flex-col flex-grow border-r border-gray-200 bg-white overflow-y-auto">
-          <div className="flex items-center h-16 flex-shrink-0 px-4 border-b border-gray-200">
-            <span className="text-xl font-bold text-blue-600">SynergySphere</span>
+        <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto transition-colors duration-200">
+          <div className="flex items-center h-16 flex-shrink-0 px-4 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xl font-bold text-blue-600 dark:text-blue-400">SynergySphere</span>
           </div>
           <div className="flex-grow flex flex-col">
             <nav className="flex-1 px-2 py-4 space-y-1">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
-                  to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  to={item.href}                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     isActive(item.href)
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <item.icon 
@@ -172,29 +169,26 @@ export default function DashboardLayout({ children, title }) {
             </nav>
           </div>
         </div>
-      </div>
-      {/* Main content */}
+      </div>      {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1">
-        <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200">
+        <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
+            className="px-4 border-r border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
             <Bars3Icon className="h-6 w-6" aria-hidden="true" />
           </button>
           
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex items-center">
-              <h1 className="text-2xl font-semibold text-gray-900">{pageTitle}</h1>
-            </div>            <div className="ml-4 flex items-center md:ml-6">
+          <div className="flex-1 px-4 flex justify-between">            <div className="flex-1 flex items-center">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{pageTitle}</h1>
+            </div><div className="ml-4 flex items-center md:ml-6">
               {/* Notifications dropdown */}
-              <div className="relative">
-                <button 
+              <div className="relative">                <button 
                   type="button"
                   id="notification-button"
-                  className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="relative p-1 rounded-full text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                   onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
                 >
                   <span className="sr-only">View notifications</span>
@@ -204,32 +198,28 @@ export default function DashboardLayout({ children, title }) {
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
-                </button>
-
-                {/* Notification dropdown */}
+                </button>                {/* Notification dropdown */}
                 {notificationDropdownOpen && (
                   <div 
                     id="notification-dropdown"
-                    className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                    className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 focus:outline-none z-50"
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <div className="py-1 max-h-96 overflow-y-auto">
-                      <div className="px-4 py-2 border-b border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Notifications</h3>
                       </div>
                       {notifications && notifications.length > 0 ? (
-                        notifications.slice(0, 5).map((notification) => (
-                          <div
+                        notifications.slice(0, 5).map((notification) => (                          <div
                             key={notification._id}
-                            className={`px-4 py-3 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}
+                            className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                           >
                             <div className="flex items-start">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900">
+                              <div className="flex-1 min-w-0">                                <p className="text-sm font-medium text-gray-900 dark:text-white">
                                   {notification.type.replace(/_/g, ' ')}
-                                </p>                                <p className="text-sm text-gray-500 truncate">
+                                </p>                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                                   {notification.content}
-                                </p>                                <p className="text-xs text-gray-400 mt-1">
+                                </p>                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                   {formatNotificationDate(notification.createdAt)}
                                 </p>
                               </div>
@@ -245,12 +235,10 @@ export default function DashboardLayout({ children, title }) {
                             </div>
                           </div>
                         ))
-                      ) : (
-                        <div className="px-4 py-6 text-center text-sm text-gray-500">
+                      ) : (                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           No notifications yet
                         </div>
-                      )}
-                      <div className="px-4 py-2 border-t border-gray-200">
+                      )}                      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
                         <Link
                           to="/notifications"
                           className="text-sm text-blue-600 hover:text-blue-500"
@@ -266,10 +254,9 @@ export default function DashboardLayout({ children, title }) {
 
               {/* Profile dropdown */}
               <div className="ml-3 relative">
-                <div>
-                  <button
+                <div>                  <button
                     type="button"
-                    className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="max-w-xs bg-white dark:bg-gray-800 flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                     id="user-menu-button"
                     aria-expanded="false"
                     aria-haspopup="true"
@@ -279,31 +266,29 @@ export default function DashboardLayout({ children, title }) {
                     {user?.avatar ? (
                       <img className="h-8 w-8 rounded-full" src={user.avatar} alt={user.name} />
                     ) : (
-                      <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
+                      <UserCircleIcon className="h-8 w-8 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                     )}
-                    <span className="ml-2 text-gray-700 hidden md:block">{user?.name}</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300 hidden md:block">{user?.name}</span>
                   </button>
                 </div>
-                
-                {/* Dropdown menu */}
+                  {/* Dropdown menu */}
                 {profileDropdownOpen && (
                   <div id="user-menu-dropdown"
-                     className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                     className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 focus:outline-none"
                      role="menu"
                      aria-orientation="vertical"
                      aria-labelledby="user-menu-button"
                      onMouseDown={(e) => e.stopPropagation()}
-                   >
-                    <Link 
+                   >                    <Link 
                       to="/profile" 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       role="menuitem"
                     >
                       Your Profile
                     </Link>
                     <Link 
                       to="/settings" 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       role="menuitem"
                     >
                       Settings
@@ -311,7 +296,7 @@ export default function DashboardLayout({ children, title }) {
                     <button
                       type='button'
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       role="menuitem">
                       Sign out
                     </button>

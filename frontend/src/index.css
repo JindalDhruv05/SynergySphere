@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Custom component styles */
 .btn {
@@ -44,17 +46,8 @@
   padding: 1.5rem;
 }
 
-.form-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid rgb(209 213 219);
-  border-radius: 0.375rem;
-  outline: none;
-}
-
-.form-input:focus {
-  border-color: rgb(37 99 235);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+.dark .card {
+  background-color: rgb(31 41 55); /* gray-800 */
 }
 
 .form-label {
@@ -63,4 +56,27 @@
   font-weight: 500;
   color: rgb(55 65 81);
   margin-bottom: 0.25rem;
+}
+
+.dark .form-label {
+  color: rgb(209 213 219); /* gray-300 */
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.dark .form-input {
+  background-color: rgb(31 41 55); /* gray-800 */
+  border-color: rgb(75 85 99); /* gray-600 */
+  color: white;
+}
+
+.form-input:focus {
+  border-color: rgb(37 99 235);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
 }

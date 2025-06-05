@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -24,8 +25,4 @@ export default {
     },
   },
   plugins: [],
-  // Tailwind v4 specific configuration
-  future: {
-    hoverOnlyWhenSupported: true,
-  },
 }
