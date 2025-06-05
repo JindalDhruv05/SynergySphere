@@ -10,6 +10,19 @@ import TaskExpenses from '../components/task/TaskExpenses';
 import TaskBudget from '../components/task/TaskBudget';
 import { format } from 'date-fns';
 
+// Helper function to safely format dates
+const safeFormatDate = (dateString, formatStr = 'MMM d, yyyy h:mm a') => {
+  if (!dateString) return 'Unknown date';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown date';
+    return format(date, formatStr);
+  } catch (error) {
+    console.warn('Invalid date:', dateString);
+    return 'Unknown date';
+  }
+};
+
 export default function TaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -537,11 +550,10 @@ export default function TaskDetail() {
                               </span>
                             </div>
                           )}
-                        </div>
-                        <div className="ml-3">
+                        </div>                        <div className="ml-3">
                           <p className="text-sm font-medium text-gray-900">{comment.author.name}</p>
                           <p className="text-xs text-gray-500">
-                            {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                            {safeFormatDate(comment.createdAt)}
                           </p>
                         </div>
                       </div>

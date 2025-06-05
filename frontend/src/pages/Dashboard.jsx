@@ -1,31 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import ProjectCard from '../components/project/ProjectCard';
 import TaskKanbanBoard from '../components/task/TaskKanbanBoard';
 import NotificationPanel from '../components/common/NotificationPanel';
+import UserInvitations from '../components/invitations/UserInvitations';
 import CreateTaskModal from '../components/task/CreateTaskModal';
 import api from '../services/api';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { notifications } = useNotifications();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         
-        // Fetch projects
+        // Fetch projects only
         const projectsRes = await api.get('/projects');
         setProjects(projectsRes.data);
-        
-        // Fetch notifications
-        const notificationsRes = await api.get('/notifications?limit=10');
-        setNotifications(notificationsRes.data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -64,9 +62,8 @@ export default function Dashboard() {
               projectId=""
               onTaskClick={(task) => navigate(`/tasks/${task._id}`)}
             />
-          </section>
-          {/* Projects, Quick Actions, Notifications below */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          </section>          {/* Projects, Invitations, Quick Actions, Notifications below */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">My Projects</h2>
@@ -98,7 +95,12 @@ export default function Dashboard() {
                 </div>
               )}
             </section>
-            
+
+            {/* User Invitations */}
+            <UserInvitations />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">

@@ -2,7 +2,9 @@ import Expense from '../models/expense.model.js';
 import Project from '../models/project.model.js';
 import Task from '../models/task.model.js';
 import ProjectMember from '../models/projectMember.model.js';
+import User from '../models/user.model.js';
 import Notification from '../models/notification.model.js';
+import { createNotification } from './notification.controller.js';
 
 // Get all expenses for a project
 export const getProjectExpenses = async (req, res) => {
@@ -202,9 +204,30 @@ export const approveExpense = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin permission required.' });
     }
     
-    await expense.approve(req.user.id);
-    
-    const updatedExpense = await Expense.findById(id)
+  await expense.approve(req.user.id);
+  
+  // Create notification for expense creator
+  const approver = await User.findById(req.user.id).select('name');
+  const notificationTitle = 'Expense Approved';
+  const notificationMessage = `Your expense "${expense.title}" (${expense.currency} ${expense.amount}) has been approved by ${approver.name}`;
+  
+  await createNotification(
+    expense.createdBy,
+    'expense_approved',
+    notificationTitle,
+    notificationMessage,
+    expense._id,
+    {
+      expenseId: expense._id,
+      projectId: expense.projectId,
+      taskId: expense.taskId,
+      amount: expense.amount,
+      currency: expense.currency,
+      approvedBy: req.user.id
+    }
+  );
+  
+  const updatedExpense = await Expense.findById(id)
       .populate('createdBy', 'name email avatar')
       .populate('approvedBy', 'name email')
       .populate('taskId', 'title');
@@ -238,9 +261,31 @@ export const rejectExpense = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin permission required.' });
     }
     
-    await expense.reject(req.user.id, reason);
-    
-    const updatedExpense = await Expense.findById(id)
+  await expense.reject(req.user.id, reason);
+  
+  // Create notification for expense creator
+  const rejector = await User.findById(req.user.id).select('name');
+  const notificationTitle = 'Expense Rejected';
+  const notificationMessage = `Your expense "${expense.title}" (${expense.currency} ${expense.amount}) has been rejected by ${rejector.name}${reason ? `. Reason: ${reason}` : ''}`;
+  
+  await createNotification(
+    expense.createdBy,
+    'expense_rejected',
+    notificationTitle,
+    notificationMessage,
+    expense._id,
+    {
+      expenseId: expense._id,
+      projectId: expense.projectId,
+      taskId: expense.taskId,
+      amount: expense.amount,
+      currency: expense.currency,
+      rejectedBy: req.user.id,
+      reason: reason || null
+    }
+  );
+  
+  const updatedExpense = await Expense.findById(id)
       .populate('createdBy', 'name email avatar')
       .populate('approvedBy', 'name email')
       .populate('taskId', 'title');

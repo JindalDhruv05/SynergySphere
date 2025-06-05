@@ -25,14 +25,37 @@ export const NotificationProvider = ({ children }) => {
     console.log('🔔 New notification received:', notif);
     setNotifications(prev => [notif, ...prev]);
     setUnreadCount(prev => prev + 1);
-  };
-  const markAsRead = async (id) => {
+  };  const markAsRead = async (id) => {
     try {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => prev - 1);
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Error marking notification read:', err);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications(prev => prev.filter(n => n._id !== id));
+      // Decrease unread count only if the deleted notification was unread
+      const notification = notifications.find(n => n._id === id);
+      if (notification && !notification.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.patch('/notifications/mark-all-read');
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error marking all notifications read:', err);
     }
   };
 
@@ -53,9 +76,16 @@ export const NotificationProvider = ({ children }) => {
       socket.off('new_notification', handler); 
     };
   }, [socket]);
-
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, markAsRead, fetchNotifications }}>
+    <NotificationContext.Provider value={{ 
+      notifications, 
+      unreadCount, 
+      addNotification, 
+      markAsRead, 
+      deleteNotification,
+      markAllAsRead,
+      fetchNotifications 
+    }}>
       {children}
     </NotificationContext.Provider>
   );

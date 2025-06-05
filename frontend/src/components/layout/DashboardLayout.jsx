@@ -15,9 +15,22 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
+// Helper function to safely format dates
+const formatNotificationDate = (dateString) => {
+  if (!dateString) return 'Just now';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Just now';
+    return format(date, 'MMM d, h:mm a');
+  } catch (error) {
+    console.warn('Invalid date for notification:', dateString);
+    return 'Just now';
+  }
+};
+
 export default function DashboardLayout({ children, title }) {
   const { user, logout } = useAuth();
-  const { notifications, unreadCount, markAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, fetchNotifications } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
@@ -48,20 +61,19 @@ export default function DashboardLayout({ children, title }) {
   // Close dropdown when navigating
   useEffect(() => {
     setProfileDropdownOpen(false);
-    setNotificationDropdownOpen(false);
-  }, [location.pathname]);
+    setNotificationDropdownOpen(false);  }, [location.pathname]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
-
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Projects', href: '/projects', icon: FolderIcon },
     { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentListIcon },
     { name: 'Chats', href: '/chats', icon: ChatBubbleLeftRightIcon },
     { name: 'Documents', href: '/documents', icon: DocumentIcon },
+    { name: 'Notifications', href: '/notifications', icon: BellIcon },
   ];
 
   // Determine if a nav item is active
@@ -214,12 +226,10 @@ export default function DashboardLayout({ children, title }) {
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900">
                                   {notification.type.replace(/_/g, ' ')}
-                                </p>
-                                <p className="text-sm text-gray-500 truncate">
+                                </p>                                <p className="text-sm text-gray-500 truncate">
                                   {notification.content}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
+                                </p>                                <p className="text-xs text-gray-400 mt-1">
+                                  {formatNotificationDate(notification.createdAt)}
                                 </p>
                               </div>
                               {!notification.read && (

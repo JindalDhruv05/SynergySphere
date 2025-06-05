@@ -144,12 +144,41 @@ export const updateTask = async (req, res) => {
     if (currentTask.status === 'Done' && status !== 'Done' && !currentTask.statusConfirmed) {
       updateData.statusConfirmed = false;
     }
-    
-    const updatedTask = await Task.findByIdAndUpdate(
+      const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true }
     );
+    
+    // Create task completion notification if task was just marked as Done
+    if (status === 'Done' && confirmDone && currentTask.status !== 'Done') {
+      // Get task members and project information
+      const taskMembers = await TaskMember.find({ taskId: req.params.id })
+        .populate('userId', '_id name');
+      const project = await Project.findById(currentTask.projectId).select('name');
+      const completedBy = await User.findById(req.user.id).select('name');
+      
+      // Create notifications for all task members except the one who completed it
+      const recipientIds = taskMembers
+        .map(tm => tm.userId._id.toString())
+        .filter(id => id !== req.user.id);
+      
+      for (const recipientId of recipientIds) {
+        await createNotification(
+          recipientId,
+          'task_completed',
+          'Task Completed',
+          `${completedBy.name} marked task "${updatedTask.title}" as completed in project "${project.name}"`,
+          req.params.id,
+          {
+            taskId: req.params.id,
+            projectId: currentTask.projectId,
+            completedBy: req.user.id,
+            projectName: project.name
+          }
+        );
+      }
+    }
     
     res.status(200).json(updatedTask);
   } catch (error) {
@@ -296,12 +325,18 @@ export const addTaskMember = async (req, res) => {
       const assigner = await User.findById(req.user.id).select('name');
       
       console.log(`DEBUG: Task: ${task?.title}, Assigner: ${assigner?.name}`);
-      
-      const notif = await createNotification(
+        const notif = await createNotification(
         userId,
         'task_assigned',
+        'Task Assignment',
         `${assigner.name} assigned you to task: ${task.title}`,
-        req.params.id
+        req.params.id,
+        {
+          taskId: req.params.id,
+          projectId: task.projectId,
+          assignerName: assigner.name,
+          taskTitle: task.title
+        }
       );
 
       console.log('DEBUG: Notification created:', !!notif);

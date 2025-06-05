@@ -20,6 +20,7 @@ import Chats from './pages/Chats';
 import ChatDetail from './pages/ChatDetail';
 import Documents from './pages/Documents';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
 // Protected route component
@@ -100,10 +101,14 @@ function App() {
                 <ProtectedRoute>
                   <ChatDetail />
                 </ProtectedRoute>
-              } />
-              <Route path="/documents" element={
+              } />              <Route path="/documents" element={
                 <ProtectedRoute>
                   <Documents />
+                </ProtectedRoute>
+              } />
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

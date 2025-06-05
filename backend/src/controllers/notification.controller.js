@@ -106,15 +106,19 @@ export const deleteNotification = async (req, res) => {
 };
 
 // Create notification (utility function for internal use)
-export const createNotification = async (userId, type, content, relatedItemId) => {
+export const createNotification = async (recipientId, type, title, message, relatedItemId = null, metadata = {}) => {
   try {
-    console.log(`DEBUG: Creating notification - userId: ${userId}, type: ${type}, content: ${content}, relatedItemId: ${relatedItemId}`);
+    console.log(`DEBUG: Creating notification - recipientId: ${recipientId}, type: ${type}, title: ${title}, message: ${message}, relatedItemId: ${relatedItemId}`);
     
     const notification = new Notification({
-      userId,
+      userId: recipientId, // For backwards compatibility
+      recipientId,
       type,
-      content,
+      title,
+      message,
+      content: message, // For backwards compatibility
       relatedItemId,
+      metadata,
       read: false
     });
     

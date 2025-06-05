@@ -178,12 +178,17 @@ export const addProjectMember = async (req, res) => {
       const adder = await User.findById(req.user.id).select('name');
       
       console.log(`📋 Project: ${project.name}, Adder: ${adder.name}`);
-      
-      const notif = await createNotification(
+        const notif = await createNotification(
         userId,
         'project_member_added',
+        'Added to Project',
         `${adder.name} added you to project: ${project.name}`,
-        req.params.id
+        req.params.id,
+        {
+          projectId: req.params.id,
+          adderName: adder.name,
+          projectName: project.name
+        }
       );
 
       if (notif) {

@@ -1,36 +1,24 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import api from '../../services/api';
+import { useNotifications } from '../../context/NotificationContext';
 
-export default function NotificationPanel({ notifications }) {
-  const [notificationList, setNotificationList] = useState(notifications || []);
+// Helper function to safely format dates
+const safeFormatDate = (dateString) => {
+  if (!dateString) return 'Just now';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Just now';
+    return format(date, 'MMM d, h:mm a');
+  } catch (error) {
+    console.warn('Invalid date for notification:', dateString);
+    return 'Just now';
+  }
+};
 
-  const markAsRead = async (id) => {
-    try {
-      await api.patch(`/notifications/${id}/read`);
-      setNotificationList(
-        notificationList.map(notif =>
-          notif._id === id ? { ...notif, read: true } : notif
-        )
-      );
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
+export default function NotificationPanel() {
+  const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
-  const markAllAsRead = async () => {
-    try {
-      await api.patch('/notifications/read-all');
-      setNotificationList(
-        notificationList.map(notif => ({ ...notif, read: true }))
-      );
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  };
-
-  if (!notificationList || notificationList.length === 0) {
+  if (!notifications || notifications.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <p>No notifications.</p>
@@ -50,14 +38,13 @@ export default function NotificationPanel({ notifications }) {
         </button>
       </div>
       <ul className="divide-y divide-gray-200">
-        {notificationList.map((notification) => (
+        {notifications.map((notification) => (
           <li key={notification._id} className={`py-4 ${!notification.read ? 'bg-blue-50' : ''}`}>
             <div className="flex space-x-3">
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">{notification.type.replace(/_/g, ' ')}</h3>
-                  <p className="text-sm text-gray-500">
-                    {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
+                  <h3 className="text-sm font-medium">{notification.type.replace(/_/g, ' ')}</h3>                  <p className="text-sm text-gray-500">
+                    {safeFormatDate(notification.createdAt)}
                   </p>
                 </div>
                 <p className="text-sm text-gray-500">{notification.content}</p>

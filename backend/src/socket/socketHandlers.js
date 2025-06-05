@@ -167,13 +167,18 @@ const handleChatEvents = (socket, io) => {
           const mentionedUser = await User.findOne({ name: username });
           if (mentionedUser && mentionedUser._id.toString() !== socket.user.id) {
             console.log(`📝 Creating notification for @${username} (${mentionedUser._id})`);
-            
-            // Create notification
+              // Create notification
             const notif = await createNotification(
               mentionedUser._id,
               'chat_ping',
+              'Chat Mention',
               `${sender.name} mentioned you in chat`,
-              chatId
+              chatId,
+              {
+                chatId,
+                senderName: sender.name,
+                senderId: socket.user.id
+              }
             );
             
             if (notif) {
