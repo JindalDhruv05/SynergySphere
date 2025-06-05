@@ -15,8 +15,9 @@ SynergySphere is a comprehensive platform designed to enhance team collaboration
 * User Registration and Authentication
 * Project Management: Create, update, and delete projects
 * Task Management: Assign tasks with deadlines and track status
+* **Budget & Expense Management**: Project budget allocation and expense tracking
 * Communication: Threaded discussions within project contexts
-* Notifications: Alerts for key events
+* Notifications: Alerts for key events and budget thresholds
 * User Profile and Settings
 
 ## Technologies Used
