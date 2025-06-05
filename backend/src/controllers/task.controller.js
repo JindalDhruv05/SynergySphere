@@ -3,6 +3,8 @@ import TaskMember from '../models/taskMember.model.js';
 import User from '../models/user.model.js';
 import Comment from '../models/comment.model.js';
 import TaskChat from '../models/taskChat.model.js';
+import Project from '../models/project.model.js';
+import ProjectMember from '../models/projectMember.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 import { createNotification } from './notification.controller.js';
 import { getSocketInstance, getConnectedUsers } from '../socket/socketHandlers.js';
@@ -149,8 +151,7 @@ export const updateTask = async (req, res) => {
       updateData,
       { new: true }
     );
-    
-    // Create task completion notification if task was just marked as Done
+      // Create task completion notification if task was just marked as Done
     if (status === 'Done' && confirmDone && currentTask.status !== 'Done') {
       // Get task members and project information
       const taskMembers = await TaskMember.find({ taskId: req.params.id })
@@ -178,6 +179,63 @@ export const updateTask = async (req, res) => {
           }
         );
       }
+    }
+
+    // Emit real-time project completion updates for any status change
+    try {
+      const project = await Project.findById(currentTask.projectId);
+      if (project) {
+        const completionStats = await project.getCompletionStats();
+        
+        // Import socket functions
+        const { getSocketInstance } = await import('../socket/socketHandlers.js');
+        const io = getSocketInstance();
+        
+        // Get all project members to emit updates
+        const projectMembers = await ProjectMember.find({ projectId: currentTask.projectId })
+          .populate('userId', '_id');
+        
+        const projectCompletionData = {
+          projectId: currentTask.projectId,
+          completion: completionStats,
+          updatedBy: {
+            id: req.user.id,
+            name: req.user.name
+          },
+          taskTitle: updatedTask.title,
+          taskStatus: status
+        };
+
+        // Emit to project room
+        io.to(`project_${currentTask.projectId}`).emit('project_completion_updated', projectCompletionData);
+        
+        // Also emit to individual project members in case they haven't joined the project room
+        for (const member of projectMembers) {
+          io.to(`user_${member.userId._id}`).emit('project_completion_updated', projectCompletionData);
+        }
+
+        // If project is now fully completed, emit special completion event
+        if (completionStats.isFullyCompleted && status === 'Done' && confirmDone) {
+          const projectCompletedData = {
+            projectId: currentTask.projectId,
+            projectName: project.name,
+            completedBy: {
+              id: req.user.id,
+              name: req.user.name
+            },
+            completionStats
+          };
+          
+          io.to(`project_${currentTask.projectId}`).emit('project_fully_completed', projectCompletedData);
+          
+          for (const member of projectMembers) {
+            io.to(`user_${member.userId._id}`).emit('project_fully_completed', projectCompletedData);
+          }
+        }
+      }
+    } catch (socketError) {
+      console.error('Error emitting project completion updates:', socketError);
+      // Don't throw error to prevent task update from failing
     }
     
     res.status(200).json(updatedTask);

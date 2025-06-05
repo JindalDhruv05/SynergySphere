@@ -22,7 +22,18 @@ export const getProjects = async (req, res) => {
       ]
     }).populate('createdBy', 'name email avatar');
     
-    res.status(200).json(projects);
+    // Add completion status to each project
+    const projectsWithCompletion = await Promise.all(
+      projects.map(async (project) => {
+        const completionStats = await project.getCompletionStats();
+        return {
+          ...project.toJSON(),
+          completion: completionStats
+        };
+      })
+    );
+    
+    res.status(200).json(projectsWithCompletion);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching projects', error: error.message });
   }
@@ -38,7 +49,14 @@ export const getProjectById = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     
-    res.status(200).json(project);
+    // Add completion status
+    const completionStats = await project.getCompletionStats();
+    const projectWithCompletion = {
+      ...project.toJSON(),
+      completion: completionStats
+    };
+    
+    res.status(200).json(projectWithCompletion);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching project', error: error.message });
   }
@@ -457,5 +475,85 @@ const checkBudgetThresholds = async (project) => {
     }
   } catch (error) {
     console.error('Error checking budget thresholds:', error);
+  }
+};
+
+export const checkAllProjectsBudgetThresholds = async () => {
+  try {
+    const projects = await Project.find({ 'budget.budgetAlerts.enabled': true });
+    
+    for (const project of projects) {
+      const utilization = await project.getBudgetUtilization();
+      const totalExpenses = await project.getTotalExpenses();
+      
+      for (const threshold of project.budget.budgetAlerts.thresholds) {
+        if (utilization >= threshold.percentage && !threshold.notified) {
+          // Mark as notified
+          threshold.notified = true;
+          await project.save();
+          
+          // Get all project members
+          const members = await ProjectMember.find({ projectId: project._id });
+          const recipientIds = [project.createdBy, ...members.map(member => member.userId)];
+          
+          // Check if notification already sent recently
+          const existingNotification = await Notification.findOne({
+            recipientId: { $in: recipientIds },
+            type: 'budget_threshold',
+            'metadata.projectId': project._id,
+            'metadata.threshold': threshold,
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Within last 24 hours
+          });
+
+          if (!existingNotification) {
+            // Create notifications for all recipients
+            const notifications = recipientIds.map(recipientId => ({
+              recipientId,
+              type: 'budget_threshold',
+              title: `Budget Alert: ${project.name}`,
+              message: `Project "${project.name}" has reached ${utilization.toFixed(1)}% of its budget (${project.budget.currency} ${totalExpenses.toLocaleString()} / ${project.budget.currency} ${project.budget.totalBudget.toLocaleString()})`,
+              metadata: {
+                projectId: project._id,
+                threshold,
+                utilization,
+                totalExpenses,
+                totalBudget: project.budget.totalBudget
+              }
+            }));
+
+            await Notification.insertMany(notifications);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking budget thresholds:', error);
+  }
+};
+
+// Get project completion status
+export const getProjectCompletion = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    // Check if user has access to this project
+    const hasAccess = await project.hasMember(req.user.id) || project.createdBy.toString() === req.user.id;
+    if (!hasAccess) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const completionStats = await project.getCompletionStats();
+    
+    res.status(200).json({
+      projectId: project._id,
+      projectName: project.name,
+      ...completionStats
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching project completion', error: error.message });
   }
 };

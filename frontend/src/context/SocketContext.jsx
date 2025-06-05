@@ -87,23 +87,55 @@ export const SocketProvider = ({ children }) => {
       socket.emit('typing_start', { chatId });
     }
   };
-
   const stopTyping = (chatId) => {
     if (socket) {
       socket.emit('typing_stop', { chatId });
     }
   };
 
+  // Project-related socket methods
+  const joinProject = (projectId) => {
+    if (socket) {
+      socket.emit('join_project', projectId);
+    }
+  };
+
+  const leaveProject = (projectId) => {
+    if (socket) {
+      socket.emit('leave_project', projectId);
+    }
+  };
+
+  // Subscribe to project completion events
+  const onProjectCompletionUpdated = (callback) => {
+    if (socket) {
+      socket.on('project_completion_updated', callback);
+      return () => socket.off('project_completion_updated', callback);
+    }
+  };
+
+  const onProjectFullyCompleted = (callback) => {
+    if (socket) {
+      socket.on('project_fully_completed', callback);
+      return () => socket.off('project_fully_completed', callback);
+    }
+  };
+
   const value = {
     socket,
     isConnected,
-    // Utility methods
+    // Chat utility methods
     joinChat,
     leaveChat,
     sendMessage,
     markMessagesRead,
     startTyping,
-    stopTyping
+    stopTyping,
+    // Project utility methods
+    joinProject,
+    leaveProject,
+    onProjectCompletionUpdated,
+    onProjectFullyCompleted
   };
 
   return (

@@ -4,6 +4,8 @@ import User from '../models/user.model.js';
 import Chat from '../models/chat.model.js';
 import Message from '../models/message.model.js';
 import ChatMember from '../models/chatMember.model.js';
+import Project from '../models/project.model.js';
+import ProjectMember from '../models/projectMember.model.js';
 import { createNotification } from '../controllers/notification.controller.js';
 
 let io = null; // Store the io instance
@@ -36,8 +38,7 @@ export const initializeSocketHandlers = (socketIo) => {
       console.log('❌ Socket authentication error:', error.message);
       next(new Error('Authentication error'));
     }
-  });
-  io.on('connection', (socket) => {
+  });  io.on('connection', (socket) => {
     console.log(`✅ User ${socket.user.name} connected: ${socket.id}`);
     
     // Store user connection
@@ -45,11 +46,19 @@ export const initializeSocketHandlers = (socketIo) => {
     console.log(`👥 Connected users count: ${connectedUsers.size}`);
     console.log(`🔗 User ${socket.user.name} mapped to socket ${socket.id}`);
     
-    // Join user to their chats
+    // Join user to their personal room for direct notifications
+    socket.join(`user_${socket.user.id}`);
+      // Join user to their chats
     handleJoinUserChats(socket);
+    
+    // Join user to their projects
+    handleJoinUserProjects(socket);
     
     // Handle chat events
     handleChatEvents(socket, io);
+    
+    // Handle project events
+    handleProjectEvents(socket, io);
       // Handle disconnection
     socket.on('disconnect', () => {
       console.log(`❌ User ${socket.user.name} disconnected: ${socket.id}`);
@@ -260,10 +269,64 @@ const handleChatEvents = (socket, io) => {
       chatId
     });
   });
-
   // Leave chat
   socket.on('leave_chat', (chatId) => {
     socket.leave(`chat_${chatId}`);
     socket.emit('left_chat', { chatId });
+  });
+};
+
+const handleJoinUserProjects = async (socket) => {
+  try {
+    // Get all projects where user is a member or creator
+    const projectMembers = await ProjectMember.find({ userId: socket.user.id });
+    const createdProjects = await Project.find({ createdBy: socket.user.id }).select('_id');
+    
+    // Join socket to each project room
+    for (const member of projectMembers) {
+      socket.join(`project_${member.projectId}`);
+    }
+    
+    for (const project of createdProjects) {
+      socket.join(`project_${project._id}`);
+    }
+    
+    const totalProjects = projectMembers.length + createdProjects.length;
+    console.log(`User ${socket.user.name} joined ${totalProjects} project rooms`);
+  } catch (error) {
+    console.error('Error joining user projects:', error);
+  }
+};
+
+const handleProjectEvents = (socket, io) => {
+  // Join a specific project room
+  socket.on('join_project', async (projectId) => {
+    try {
+      // Verify user is member of this project or creator
+      const isMember = await ProjectMember.exists({
+        projectId,
+        userId: socket.user.id
+      });
+      
+      const isCreator = await Project.exists({
+        _id: projectId,
+        createdBy: socket.user.id
+      });
+      
+      if (isMember || isCreator) {
+        socket.join(`project_${projectId}`);
+        socket.emit('joined_project', { projectId, success: true });
+      } else {
+        socket.emit('joined_project', { projectId, success: false, error: 'Not a member' });
+      }
+    } catch (error) {
+      socket.emit('joined_project', { projectId, success: false, error: error.message });
+    }
+  });
+
+  // Leave project room
+  socket.on('leave_project', (projectId) => {
+    socket.leave(`project_${projectId}`);
+    socket.emit('left_project', { projectId });
   });
 };
