@@ -34,9 +34,9 @@ export const getTasks = async (req, res) => {
       { _id: { $in: taskIds } },
       { createdBy: req.user.id }
     ];
-    
-    const tasks = await Task.find(query)
+      const tasks = await Task.find(query)
       .populate('createdBy', 'name email avatar')
+      .populate('projectId', 'name')
       .sort({ createdAt: -1 });
     
     res.status(200).json(tasks);
@@ -470,11 +470,55 @@ export const updateTaskBudget = async (req, res) => {
   try {
     const { totalBudget, currency, budgetAlerts } = req.body;
     
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findById(req.params.id).populate('projectId');
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
-      // Permission check is already handled by isTaskMember middleware
+    
+    // Permission check is already handled by isTaskMember middleware
+    // Check if new budget would exceed project budget
+    if (totalBudget !== undefined && task.projectId) {
+      const project = task.projectId;
+      
+      if (project.budget && project.budget.totalBudget) {
+        // Get all tasks in this project
+        const allProjectTasks = await Task.find({ projectId: project._id });
+        
+        // Calculate total budget allocated to all tasks excluding this task
+        let totalAllocatedBudget = 0;
+        for (const projectTask of allProjectTasks) {
+          if (projectTask._id.toString() !== task._id.toString() && projectTask.budget) {
+            totalAllocatedBudget += projectTask.budget.totalBudget || 0;
+          }
+        }
+        
+        // Add the new budget for this task
+        const newTotalAllocated = totalAllocatedBudget + totalBudget;
+        
+        // Check if total allocated budget would exceed project budget
+        if (newTotalAllocated > project.budget.totalBudget) {
+          return res.status(400).json({ 
+            message: 'Total task budgets cannot exceed project budget',
+            projectBudget: project.budget.totalBudget,
+            currentAllocated: totalAllocatedBudget,
+            requestedTaskBudget: totalBudget,
+            wouldResultIn: newTotalAllocated
+          });
+        }
+        
+        // Calculate current total task expenses for this task
+        const currentExpenseTotal = await task.getTotalExpenses();
+        
+        // Additional check: if current expenses would exceed new budget
+        if (currentExpenseTotal > totalBudget) {
+          return res.status(400).json({ 
+            message: 'Cannot set budget lower than current expense total',
+            currentExpenses: currentExpenseTotal,
+            requestedBudget: totalBudget
+          });
+        }
+      }
+    }
     
     // Initialize budget object if it doesn't exist
     if (!task.budget) {

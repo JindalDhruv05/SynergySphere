@@ -296,6 +296,111 @@ export const updateProjectBudget = async (req, res) => {
   }
 };
 
+// Get all task budgets for a project
+export const getProjectTasksBudget = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    
+    // Verify project exists and user has access
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    // Get all tasks for this project
+    const Task = await import('../models/task.model.js');
+    const tasks = await Task.default.find({ projectId });
+    
+    if (tasks.length === 0) {
+      return res.status(200).json([]);
+    }
+    
+    // Get expenses for all tasks
+    const Expense = await import('../models/expense.model.js');
+    const taskIds = tasks.map(task => task._id);
+    const expenses = await Expense.default.find({ taskId: { $in: taskIds } });
+    
+    // Group expenses by task
+    const expensesByTask = expenses.reduce((acc, expense) => {
+      if (!acc[expense.taskId]) {
+        acc[expense.taskId] = [];
+      }
+      acc[expense.taskId].push(expense);
+      return acc;
+    }, {});
+    
+    // Calculate budget overview for each task
+    const taskBudgets = tasks.map(task => {
+      // Initialize budget if it doesn't exist
+      const taskBudget = task.budget || {
+        totalBudget: 0,
+        currency: 'USD',
+        budgetAlerts: {
+          enabled: true,
+          thresholds: [{ percentage: 80, notified: false }]
+        }
+      };
+      
+      // Get expenses for this task
+      const taskExpenses = expensesByTask[task._id] || [];
+      const totalExpenses = taskExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const approvedExpenses = taskExpenses
+        .filter(exp => exp.status === 'Approved' || exp.status === 'Paid')
+        .reduce((sum, exp) => sum + exp.amount, 0);
+      
+      // Calculate budget utilization
+      const budgetUtilization = taskBudget.totalBudget > 0 
+        ? (approvedExpenses / taskBudget.totalBudget) * 100 
+        : 0;
+      
+      // Expense breakdown by category
+      const categoryBreakdown = taskExpenses.reduce((acc, expense) => {
+        if (!acc[expense.category]) {
+          acc[expense.category] = { count: 0, amount: 0 };
+        }
+        acc[expense.category].count++;
+        acc[expense.category].amount += expense.amount;
+        return acc;
+      }, {});
+      
+      // Status breakdown
+      const statusBreakdown = taskExpenses.reduce((acc, expense) => {
+        if (!acc[expense.status]) {
+          acc[expense.status] = { count: 0, amount: 0 };
+        }
+        acc[expense.status].count++;
+        acc[expense.status].amount += expense.amount;
+        return acc;
+      }, {});
+      
+      return {
+        taskId: task._id,
+        taskName: task.title,
+        taskPriority: task.priority,
+        taskStatus: task.status,
+        budget: taskBudget,
+        budgetUtilization: Math.round(budgetUtilization * 100) / 100,
+        totalExpenses: Math.round(totalExpenses * 100) / 100,
+        approvedExpenses: Math.round(approvedExpenses * 100) / 100,
+        remainingBudget: Math.round((taskBudget.totalBudget - approvedExpenses) * 100) / 100,
+        expenseBreakdown: {
+          byCategory: categoryBreakdown,
+          byStatus: statusBreakdown
+        },
+        alerts: {
+          overBudget: budgetUtilization > 100,
+          nearBudgetLimit: budgetUtilization > 80 && budgetUtilization <= 100
+        }
+      };
+    });
+    
+    res.status(200).json(taskBudgets);
+  } catch (error) {
+    console.error('Error fetching project tasks budget:', error);
+    res.status(500).json({ message: 'Error fetching project tasks budget', error: error.message });
+  }
+};
+
 // Helper function to check budget thresholds and create notifications
 const checkBudgetThresholds = async (project) => {
   try {

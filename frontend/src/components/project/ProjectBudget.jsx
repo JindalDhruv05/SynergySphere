@@ -7,6 +7,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
+import ProjectTasksBudget from './ProjectTasksBudget';
 
 export default function ProjectBudget({ projectId, project, onUpdateProject }) {
   const [budgetOverview, setBudgetOverview] = useState(null);
@@ -251,8 +252,7 @@ export default function ProjectBudget({ projectId, project, onUpdateProject }) {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              </div>            )}
           </>
         ) : (
           <div className="text-center py-8">
@@ -270,6 +270,19 @@ export default function ProjectBudget({ projectId, project, onUpdateProject }) {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Task Budgets Section */}
+      <div className="border-t border-gray-200 mt-8">
+        <div className="px-6 py-4 bg-gray-50">
+          <h3 className="text-lg font-medium text-gray-900">Task Budgets</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Budget overview for all tasks in this project
+          </p>
+        </div>
+        <div className="p-6">
+          <ProjectTasksBudget projectId={projectId} />
+        </div>
       </div>
     </div>
   );
