@@ -169,8 +169,7 @@ export default function TaskKanbanBoard({
                             {...provided.dragHandleProps}
                             className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer transition ${snapshot.isDragging ? 'ring-2 ring-blue-500' : 'hover:shadow-md'} ${task.status === 'Done' && task.statusConfirmed ? 'opacity-75' : ''}`}
                             onClick={() => onTaskClick && onTaskClick(task)}
-                          >
-                            <div className="flex justify-between items-center">
+                          >                            <div className="flex justify-between items-center">
                               <span className="font-medium text-gray-800">{task.title}</span>
                               <div className="flex items-center space-x-2">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getBadgeClasses(task.priority)}`}>{task.priority}</span>
@@ -184,6 +183,11 @@ export default function TaskKanbanBoard({
                                 )}
                               </div>
                             </div>
+                            {task.projectId && task.projectId.name && (
+                              <div className="mt-1 text-xs text-blue-600 font-medium">
+                                Project: {task.projectId.name}
+                              </div>
+                            )}
                             <div className="mt-2 text-xs text-gray-500">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</div>
                           </div>
                         )}

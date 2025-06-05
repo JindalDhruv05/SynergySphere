@@ -9,7 +9,8 @@ import {
   addProjectMember,
   updateProjectMember,
   removeProjectMember,
-  updateProjectBudget
+  updateProjectBudget,
+  getProjectTasksBudget
 } from '../controllers/project.controller.js';
 import { verifyToken, isProjectMember, isProjectAdmin } from '../middleware/auth.middleware.js';
 
@@ -23,6 +24,7 @@ router.delete('/:id', verifyToken, isProjectAdmin, deleteProject);
 
 // Project budget
 router.put('/:id/budget', verifyToken, isProjectAdmin, updateProjectBudget);
+router.get('/:id/tasks-budget', verifyToken, isProjectMember, getProjectTasksBudget);
 
 // Project members
 router.get('/:id/members', verifyToken, isProjectMember, getProjectMembers);
