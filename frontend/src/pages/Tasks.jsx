@@ -57,7 +57,6 @@ export default function Tasks() {
       [key]: value
     });
   };
-
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = !filters.status || task.status === filters.status;
     const matchesPriority = !filters.priority || task.priority === filters.priority;
@@ -71,7 +70,21 @@ export default function Tasks() {
       task.title.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
       (task.description && task.description.toLowerCase().includes(filters.searchQuery.toLowerCase()));
     
-    return matchesStatus && matchesPriority && matchesProject && matchesSearch;
+    const matches = matchesStatus && matchesPriority && matchesProject && matchesSearch;
+    
+    // Debug logging
+    if (filters.status || filters.priority || filters.projectId || filters.searchQuery) {
+      console.log(`Task "${task.title}":`, {
+        status: task.status,
+        priority: task.priority,
+        projectId: task.projectId,
+        filters,
+        matches: { matchesStatus, matchesPriority, matchesProject, matchesSearch },
+        finalMatch: matches
+      });
+    }
+    
+    return matches;
   });
 
   return (
@@ -164,11 +177,14 @@ export default function Tasks() {
               Create a new task
             </Link>
           </div>
-        </div>
-      ) : (
+        </div>      ) : (
         <div className="bg-white shadow rounded-lg">
           <TaskKanbanBoard
             projectId={filters.projectId}
+            statusFilter={filters.status}
+            priorityFilter={filters.priority}
+            searchQuery={filters.searchQuery}
+            tasks={filteredTasks}
             onTaskClick={(task) => window.location.href = `/tasks/${task._id}`}
           />
         </div>

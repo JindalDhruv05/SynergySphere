@@ -1,8 +1,12 @@
 import mongoose from 'mongoose';
 
 const NotificationSchema = new mongoose.Schema({
+
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },  type: { 
+
   recipientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   type: { 
+
     type: String, 
     enum: [
       'task_assigned', 
@@ -10,13 +14,14 @@ const NotificationSchema = new mongoose.Schema({
       'comment_added', 
       'deadline_approaching',
       'project_invitation',
+      'project_member_added',
       'document_shared',
       'budget_threshold',
       'task_budget_threshold',
       'chat_ping'    
 ], 
     required: true 
-  },
+  }},
   title: { type: String, required: true },
   message: { type: String, required: true },
   relatedItemId: { type: mongoose.Schema.Types.ObjectId }, // Could be taskId, projectId, etc.

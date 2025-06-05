@@ -314,14 +314,23 @@ export const sendMessage = async (req, res) => {
     const io = getSocketInstance();
     if (io) {
       io.to(`chat_${req.params.id}`).emit('new_message', message);
-    }
-
-    // Handle @mentions (ping)
-    const mentionPattern = /@([\w]+)/g;
+    }    // Handle @mentions (ping)
+    // Support both @username and @"full name" formats
+    const mentionPatterns = [
+      /@"([^"]+)"/g,      // @"John Doe" - quoted names with spaces
+      /@'([^']+)'/g,      // @'John Doe' - single quoted names
+      /@([\w]+)/g         // @username - simple usernames without spaces
+    ];
+    
     const mentions = new Set();
-    let match;
-    while ((match = mentionPattern.exec(content))) {
-      mentions.add(match[1]);
+    
+    for (const pattern of mentionPatterns) {
+      let match;
+      while ((match = pattern.exec(content))) {
+        mentions.add(match[1]);
+      }
+      // Reset regex lastIndex for next pattern
+      pattern.lastIndex = 0;
     }
     if (mentions.size > 0) {
       // Fetch sender name

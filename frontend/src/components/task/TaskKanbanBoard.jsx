@@ -9,7 +9,14 @@ const STATUS_COLUMNS = [
   { id: 'Done', title: 'Done' }
 ];
 
-export default function TaskKanbanBoard({ projectId, onTaskClick }) {
+export default function TaskKanbanBoard({ 
+  projectId, 
+  statusFilter, 
+  priorityFilter, 
+  searchQuery, 
+  tasks: propTasks, 
+  onTaskClick 
+}) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmDoneModal, setConfirmDoneModal] = useState({ 
@@ -21,16 +28,31 @@ export default function TaskKanbanBoard({ projectId, onTaskClick }) {
   });
 
   useEffect(() => {
-    fetchTasks();
-  }, [projectId]);
+    if (propTasks) {
+      // Use tasks passed from parent (with filters applied)
+      setTasks(propTasks);
+      setLoading(false);
+    } else {
+      // Fallback to fetching tasks (for backward compatibility)
+      fetchTasks();
+    }
+  }, [projectId, statusFilter, priorityFilter, searchQuery, propTasks]);
 
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/tasks?projectId=${projectId}`);
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (projectId) params.append('projectId', projectId);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const queryString = params.toString();
+      const url = queryString ? `/tasks?${queryString}` : '/tasks';
+      
+      const res = await api.get(url);
       setTasks(res.data);
     } catch (err) {
-      // handle error
+      console.error('Error fetching tasks:', err);
     } finally {
       setLoading(false);
     }
