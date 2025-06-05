@@ -2,6 +2,7 @@ import Task from '../models/task.model.js';
 import TaskMember from '../models/taskMember.model.js';
 import User from '../models/user.model.js';
 import Comment from '../models/comment.model.js';
+import TaskChat from '../models/taskChat.model.js';
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
 
 // Get all tasks for current user
@@ -281,7 +282,13 @@ export const addTaskMember = async (req, res) => {
     });
     
     await taskMember.save();
-    
+
+    // Sync task chat members if chat exists
+    const taskChat = await TaskChat.findOne({ taskId: req.params.id });
+    if (taskChat) {
+      await taskChat.syncWithTaskMembers();
+    }
+
     res.status(201).json(taskMember);
   } catch (error) {
     res.status(500).json({ message: 'Error adding task member', error: error.message });

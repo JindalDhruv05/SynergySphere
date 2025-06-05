@@ -2,6 +2,7 @@ import Project from '../models/project.model.js';
 import ProjectMember from '../models/projectMember.model.js';
 import User from '../models/user.model.js'; 
 import { createGoogleDriveFolder } from '../services/googleDrive.js';
+import ProjectChat from '../models/projectChat.model.js';
 
 // Get all projects for current user
 export const getProjects = async (req, res) => {
@@ -163,7 +164,13 @@ export const addProjectMember = async (req, res) => {
     });
     
     await projectMember.save();
-    
+
+    // Sync project chat members if chat exists
+    const projectChat = await ProjectChat.findOne({ projectId: req.params.id });
+    if (projectChat) {
+      await projectChat.syncWithProjectMembers();
+    }
+
     res.status(201).json(projectMember);
   } catch (error) {
     res.status(500).json({ message: 'Error adding project member', error: error.message });
